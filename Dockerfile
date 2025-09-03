@@ -30,11 +30,21 @@ RUN composer install --no-dev --no-scripts --no-autoloader
 COPY . .
 
 # Finish composer setup
-RUN composer dump-autoload --optimize
+RUN composer dump-autoload --optimize --no-scripts
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www \
-    && chmod -R 777 storage bootstrap/cache
+# --- create runtime user LAST ---
+ARG UID=1000
+ARG GID=1000
+RUN addgroup -g ${GID} app && adduser -D -u ${UID} -G app app
+
+# Set sane perms for Laravel
+# (keep root to set perms, then drop to non-root at runtime)
+RUN chown -R app:app /var/www \
+ && chmod -R 775 storage bootstrap/cache
+
+# You can either switch here...
+# USER app
+# ...or let docker-compose choose the user (recommended)
 
 EXPOSE 9000
 CMD ["php-fpm"]
