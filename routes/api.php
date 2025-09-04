@@ -20,4 +20,17 @@ Route::middleware(['auth:api','tenant'])->group(function () {
     Route::apiResource('tables', TableController::class);
     Route::apiResource('categories', MenuCategoryController::class);
     Route::apiResource('items', MenuItemController::class);
+
+
+    // Orders
+    Route::get('orders', [OrderController::class,'index']);
+    Route::post('orders', [OrderController::class,'store']);
+    Route::get('orders/{order}', [OrderController::class,'show']);
+    Route::post('orders/{order}/items', [OrderController::class,'addItem']);
+    Route::put('orders/{order}/items/{orderItem}', [OrderController::class,'updateItem']);
+    Route::delete('orders/{order}/items/{orderItem}', [OrderController::class,'removeItem']);
+    Route::post('orders/{order}/close', [OrderController::class,'close']);
+
+    // Reports
+    Route::get('reports/summary', [ReportController::class,'summary']);
 });
