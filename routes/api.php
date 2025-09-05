@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminTenantController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MenuCategoryController;
 use App\Http\Controllers\Api\MenuItemController;
@@ -12,6 +13,21 @@ Route::post('/register', [AuthController::class, 'register']); // optional
 Route::post('/login',    [AuthController::class, 'login']);
 Route::post('/refresh',  [AuthController::class, 'refresh'])->middleware('auth:api');
 Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:api');
+
+Route::prefix('admin')
+  ->middleware(['auth:api','role:SuperAdmin'])
+  ->group(function () {
+    Route::get('restaurants', [AdminTenantController::class, 'listRestaurants']);
+    Route::get('restaurants/{restaurant}/overview', [AdminTenantController::class, 'overview']);
+    Route::get('restaurants/{restaurant}/tables', [AdminTenantController::class, 'tables']);
+    Route::get('restaurants/{restaurant}/menu/categories', [AdminTenantController::class, 'categories']);
+    Route::get('restaurants/{restaurant}/menu/items', [AdminTenantController::class, 'items']);
+    Route::get('restaurants/{restaurant}/orders', [AdminTenantController::class, 'orders']);
+    Route::get('restaurants/{restaurant}/reports/summary', [AdminTenantController::class, 'dailySummary']);
+    
+    // Optional: impersonation (returns JWT for that user; lock this down!)
+    Route::post('impersonate/{user}', [AdminTenantController::class, 'impersonate']);
+});
 
 // ---------- PROTECTED ----------
 Route::middleware(['auth:api','tenant'])->group(function () {

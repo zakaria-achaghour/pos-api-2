@@ -19,6 +19,22 @@ class BaseSeeder extends Seeder
      */
     public function run(): void
     {
+
+
+                // role using 'api' guard
+        Role::findOrCreate('SuperAdmin', 'api');
+
+        // global super admin (no restaurant_id)
+        $super = User::updateOrCreate(
+        ['email' => 'super@pos.local'],
+        [
+            'name' => 'Super Admin',
+            'password' => Hash::make('superpassword'),
+            'restaurant_id' => null,
+        ]
+        );
+        $super->assignRole('SuperAdmin');
+        
       // 1. Restaurant
         $restaurant = Restaurant::create([
             'name'    => 'Demo Resto',
