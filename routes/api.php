@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\MenuCategoryController;
+use App\Http\Controllers\Api\MenuItemController;
+use App\Http\Controllers\Api\TableController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -14,8 +17,7 @@ Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:ap
 Route::middleware(['auth:api','tenant'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
 
-    // Add your domain routes here, e.g.:
-    // Route::apiResource('tables', TableController::class);
-    // Route::apiResource('categories', MenuCategoryController::class);
-    // Route::apiResource('items', MenuItemController::class);
+    Route::apiResource('tables', TableController::class);
+    Route::apiResource('categories', MenuCategoryController::class);
+    Route::apiResource('items', MenuItemController::class);
 });
