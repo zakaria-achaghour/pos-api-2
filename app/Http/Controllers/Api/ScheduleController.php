@@ -66,11 +66,6 @@ Route::middleware(['auth:api','tenant'])->group(function () {
         Route::get('analytics', [KitchenController::class, 'analytics']);
     });
 
-     // Schedule Management
-    Route::apiResource('schedules', ScheduleController::class);
-    Route::get('schedules/weekly', [ScheduleController::class, 'weekly']);
-    Route::post('schedules/bulk', [ScheduleController::class, 'bulk']);
-
     // Reports
     Route::prefix('reports')->group(function () {
         Route::get('summary', [ReportController::class, 'summary']);
@@ -90,9 +85,6 @@ Route::middleware(['auth:api','tenant'])->group(function () {
         Route::post('clock-out', [AttendanceController::class, 'clockOut']);
         Route::get('/', [AttendanceController::class, 'index']);
         Route::get('summary', [AttendanceController::class, 'summary']);
-        // PDF Reports
-        Route::get('reports/summary-pdf', [AttendanceController::class, 'generateSummaryPdf']);
-        Route::get('reports/detailed-pdf', [AttendanceController::class, 'generateDetailedPdf']);
     });
     
     // Analytics & Dashboard
