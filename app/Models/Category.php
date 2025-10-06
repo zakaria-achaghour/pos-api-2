@@ -1,34 +1,27 @@
 <?php
-// filepath: app/Models/MenuItem.php
+// filepath: app/Models/Category.php
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class MenuItem extends Model
+class Category extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'restaurant_id',
-        'category_id',
         'name',
         'description',
-        'price',
-        'cost',
-        'is_available',
-        'preparation_time',
-        'image_url',
-        'allergens',
+        'sort_order',
+        'is_active',
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
-        'cost' => 'decimal:2',
-        'is_available' => 'boolean',
-        'allergens' => 'array',
+        'is_active' => 'boolean',
     ];
 
     public function restaurant(): BelongsTo
@@ -36,8 +29,8 @@ class MenuItem extends Model
         return $this->belongsTo(Restaurant::class);
     }
 
-    public function category(): BelongsTo
+    public function menuItems(): HasMany
     {
-        return $this->belongsTo(Category::class);
+        return $this->hasMany(MenuItem::class);
     }
 }

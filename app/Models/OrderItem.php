@@ -1,13 +1,40 @@
 <?php
+// filepath: app/Models/OrderItem.php
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderItem extends Model
 {
-     protected $fillable = ['order_id','menu_item_id','quantity','price','notes'];
+    use HasFactory;
 
-    public function order()    { return $this->belongsTo(Order::class); }
-    public function menuItem() { return $this->belongsTo(MenuItem::class); }
+    protected $fillable = [
+        'order_id',
+        'menu_item_id',
+        'quantity',
+        'unit_price',
+        'special_instructions',
+    ];
+
+    protected $casts = [
+        'unit_price' => 'decimal:2',
+    ];
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function menuItem(): BelongsTo
+    {
+        return $this->belongsTo(MenuItem::class);
+    }
+
+    public function getTotalAttribute(): float
+    {
+        return $this->quantity * $this->unit_price;
+    }
 }

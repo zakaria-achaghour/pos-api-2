@@ -1,0 +1,56 @@
+<?php
+// filepath: database/seeders/TableSeeder.php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\Table;
+use App\Models\Restaurant;
+
+class TableSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $restaurants = Restaurant::all();
+
+        foreach ($restaurants as $restaurant) {
+            $this->createTablesForRestaurant($restaurant);
+        }
+    }
+
+    private function createTablesForRestaurant(Restaurant $restaurant): void
+    {
+        $tableCount = match($restaurant->subdomain) {
+            'golden-fork' => 20,  // Upscale restaurant
+            'bella-vista' => 15,  // Medium pizzeria
+            'sakura-sushi' => 12, // Intimate sushi bar
+            'cafe-lumiere' => 18, // Busy cafe
+            default => 15,
+        };
+
+        for ($i = 1; $i <= $tableCount; $i++) {
+            $capacity = match(true) {
+                $i <= 6 => 2,      // Small tables
+                $i <= 12 => 4,     // Medium tables
+                $i <= 16 => 6,     // Large tables
+                default => 8,      // Extra large tables
+            };
+
+            Table::create([
+                'restaurant_id' => $restaurant->id,
+                'number' => sprintf('T%02d', $i),
+                'capacity' => $capacity,
+                'status' => 'available',
+                'section' => match(true) {
+                    $i <= 5 => 'Main Dining',
+                    $i <= 10 => 'Window Section',
+                    $i <= 15 => 'Patio',
+                    default => 'Private Dining',
+                },
+                'grid_x' => ($i - 1) % 5,
+                'grid_y' => intval(($i - 1) / 5),
+                'qr_code' => 'QR-' . $restaurant->subdomain . '-T' . sprintf('%02d', $i),
+            ]);
+        }
+    }
+}
