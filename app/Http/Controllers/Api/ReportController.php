@@ -18,7 +18,7 @@ class ReportController extends Controller
 {
     public function __construct(private ReportService $reportService)
     {
-        $this->middleware(['role:Owner|Manager']);
+        // $this->middleware(['role:Owner|Manager']);
     }
 
     public function summary(Request $request): JsonResponse

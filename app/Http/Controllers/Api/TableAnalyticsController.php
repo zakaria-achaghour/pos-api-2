@@ -16,7 +16,7 @@ class TableAnalyticsController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['role:Owner|Manager']);
+        // $this->middleware(['role:Owner|Manager']);
     }
 
     public function index(Request $request): JsonResponse

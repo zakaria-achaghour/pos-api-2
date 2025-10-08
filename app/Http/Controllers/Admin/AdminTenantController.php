@@ -11,6 +11,8 @@ use App\Models\Table;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Infrastructure\Tenancy\Tenant;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -18,10 +20,169 @@ class AdminTenantController extends Controller
 {
    public function listRestaurants(Request $r) {
         $q = Restaurant::query();
-        if ($search = $r->query('q')) {
-            $q->where('name','ilike',"%{$search}%");
+        
+        // Handle search parameter
+        if ($search = $r->query('search') ?: $r->query('q')) {
+            $q->where(function($query) use ($search) {
+                $query->where('name','ilike',"%{$search}%")
+                      ->orWhere('city','ilike',"%{$search}%")
+                      ->orWhere('address','ilike',"%{$search}%");
+            });
         }
-        return $q->orderBy('id','desc')->paginate(20);
+        
+        // Handle status filter
+        if ($status = $r->query('status')) {
+            $q->where('status', $status);
+        }
+        
+        // Handle per_page parameter
+        $perPage = $r->query('per_page', 20);
+        $perPage = min($perPage, 100); // Max 100 per page
+        
+        return $q->orderBy('id','desc')->paginate($perPage);
+    }
+
+    public function createRestaurant(Request $r) {
+        $data = $r->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255',
+            'address' => 'nullable|string',
+            'city' => 'nullable|string|max:100',
+            'country' => 'nullable|string|max:100',
+            'currency' => 'nullable|string|size:3',
+            'timezone' => 'nullable|string|max:50',
+            'status' => 'nullable|in:active,inactive,suspended',
+            'owner_name' => 'required|string|max:255',
+            'owner_email' => 'required|email',
+            'subscription_type' => 'nullable|in:basic,premium,enterprise',
+        ]);
+
+        try {
+            // Create restaurant with default values
+            $restaurant = Restaurant::create([
+                'name' => $data['name'],
+                'slug' => $data['slug'] ?: \Str::slug($data['name']),
+                'address' => $data['address'] ?? '',
+                'city' => $data['city'] ?? '',
+                'country' => $data['country'] ?? 'USA',
+                'currency' => $data['currency'] ?? 'USD',
+                'timezone' => $data['timezone'] ?? 'UTC',
+                'status' => $data['status'] ?? 'active',
+                'is_active' => true,
+            ]);
+            
+            return response()->json([
+                'message' => 'Restaurant created successfully',
+                'restaurant' => $restaurant,
+            ], 201);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to create restaurant',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function showRestaurant(Restaurant $restaurant) {
+        return response()->json($restaurant->load(['users' => function($q) {
+            $q->whereHas('roles', function($roleQuery) {
+                $roleQuery->where('name', 'Owner');
+            });
+        }]));
+    }
+
+    public function updateRestaurant(Request $r, Restaurant $restaurant) {
+        $data = $r->validate([
+            'name' => 'sometimes|string|max:255',
+            'slug' => 'sometimes|string|max:255|unique:restaurants,slug,' . $restaurant->id,
+            'address' => 'sometimes|string',
+            'city' => 'sometimes|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
+            'country' => 'sometimes|string|max:100',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'website' => 'nullable|url|max:255',
+            'cuisine_type' => 'nullable|string|max:100',
+            'currency' => 'sometimes|string|size:3|in:USD,EUR,GBP,MAD,CAD,AUD',
+            'timezone' => 'sometimes|string|max:50',
+            'tax_rate' => 'nullable|numeric|between:0,100',
+            'service_charge' => 'nullable|numeric|between:0,100',
+            'status' => 'sometimes|in:active,inactive,suspended',
+            'subscription_type' => 'sometimes|in:basic,premium,enterprise',
+            'subscription_start' => 'nullable|date',
+            'subscription_end' => 'nullable|date|after:subscription_start',
+        ]);
+
+        $restaurant->update($data);
+        
+        return response()->json([
+            'message' => 'Restaurant updated successfully',
+            'restaurant' => $restaurant->fresh()
+        ]);
+    }
+
+    public function deleteRestaurant(Restaurant $restaurant) {
+        // Check if restaurant has data that would prevent deletion
+        $hasOrders = Tenant::with($restaurant->id, fn() => Order::exists());
+        
+        if ($hasOrders) {
+            return response()->json([
+                'message' => 'Cannot delete restaurant with existing orders. Set status to inactive instead.'
+            ], 422);
+        }
+        
+        DB::beginTransaction();
+        try {
+            // Delete associated users
+            User::where('restaurant_id', $restaurant->id)->delete();
+            
+            // Delete restaurant
+            $restaurant->delete();
+            
+            DB::commit();
+            
+            return response()->json([
+                'message' => 'Restaurant deleted successfully'
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'message' => 'Failed to delete restaurant',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getRestaurantStats(Restaurant $restaurant) {
+        return Tenant::with($restaurant->id, function () {
+            $today = now()->toDateString();
+            $thisMonth = now()->format('Y-m');
+            
+            return [
+                'total_orders' => Order::count(),
+                'orders_today' => Order::whereDate('placed_at', $today)->count(),
+                'orders_this_month' => Order::whereDate('placed_at', 'like', $thisMonth.'%')->count(),
+                'total_revenue' => DB::table('payments')
+                    ->join('orders','orders.id','=','payments.order_id')
+                    ->sum('amount'),
+                'revenue_today' => DB::table('payments')
+                    ->join('orders','orders.id','=','payments.order_id')
+                    ->whereDate('payments.paid_at', $today)
+                    ->sum('amount'),
+                'revenue_this_month' => DB::table('payments')
+                    ->join('orders','orders.id','=','payments.order_id')
+                    ->whereDate('payments.paid_at', 'like', $thisMonth.'%')
+                    ->sum('amount'),
+                'total_tables' => Table::count(),
+                'total_menu_items' => MenuItem::count(),
+                'total_staff' => User::count(),
+                'active_staff' => User::whereHas('roles', function($q) {
+                    $q->whereIn('name', ['Manager', 'Cashier', 'Waiter', 'Kitchen']);
+                })->count(),
+            ];
+        });
     }
 
     public function overview(Restaurant $restaurant) {

@@ -25,7 +25,15 @@ Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:ap
 Route::prefix('admin')
   ->middleware(['auth:api','role:SuperAdmin'])
   ->group(function () {
+    // Restaurant CRUD operations
     Route::get('restaurants', [AdminTenantController::class, 'listRestaurants']);
+    Route::post('restaurants', [AdminTenantController::class, 'createRestaurant']);
+    Route::get('restaurants/{restaurant}', [AdminTenantController::class, 'showRestaurant']);
+    Route::put('restaurants/{restaurant}', [AdminTenantController::class, 'updateRestaurant']);
+    Route::delete('restaurants/{restaurant}', [AdminTenantController::class, 'deleteRestaurant']);
+    Route::get('restaurants/{restaurant}/stats', [AdminTenantController::class, 'getRestaurantStats']);
+    
+    // Restaurant-specific views
     Route::get('restaurants/{restaurant}/overview', [AdminTenantController::class, 'overview']);
     Route::get('restaurants/{restaurant}/tables', [AdminTenantController::class, 'tables']);
     Route::get('restaurants/{restaurant}/menu/categories', [AdminTenantController::class, 'categories']);

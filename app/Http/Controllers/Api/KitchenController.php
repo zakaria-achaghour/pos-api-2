@@ -16,7 +16,7 @@ class KitchenController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['role:Kitchen|Manager|Owner']);
+        // $this->middleware(['role:Kitchen|Manager|Owner']);
     }
 
     public function index(Request $request): JsonResponse

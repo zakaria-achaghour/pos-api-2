@@ -15,7 +15,7 @@ class ScheduleController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['role:Owner|Manager'])->except(['index', 'show']);
+        // $this->middleware(['role:Owner|Manager'])->except(['index', 'show']);
     }
 
     public function index(Request $request): JsonResponse

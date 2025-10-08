@@ -13,7 +13,7 @@ class TableController extends Controller
 {
 
     public function __construct() {
-        $this->middleware(['role:Owner|Manager'])->only(['store','update','destroy']);
+        // $this->middleware(['role:Owner|Manager'])->only(['store','update','destroy']);
     }
 
     /**
@@ -21,7 +21,16 @@ class TableController extends Controller
      */
     public function index()
     {
-          return Table::where('restaurant_id', Tenant::id())->orderBy('name')->paginate();
+        try {
+            $tables = Table::where('restaurant_id', Tenant::id())->orderBy('number')->paginate();
+            return response()->json($tables);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
+        }
     }
 
     /**

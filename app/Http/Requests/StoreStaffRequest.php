@@ -14,14 +14,14 @@ class StoreStaffRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exists:users,id',
             'employee_id' => 'required|string|max:50|unique:staff,employee_id',
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
+            'email' => 'required|email|max:255|unique:staff,email',
             'phone' => 'nullable|string|max:20',
             'position' => 'required|string|max:100',
-            'hourly_rate' => 'nullable|numeric|min:0',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'department' => 'required|string|max:100',
+            'hourly_rate' => 'required|numeric|min:0',
             'hire_date' => 'required|date',
         ];
     }

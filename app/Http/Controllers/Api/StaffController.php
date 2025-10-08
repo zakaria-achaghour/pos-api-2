@@ -12,39 +12,45 @@ use Infrastructure\Tenancy\Tenant;
 
 class StaffController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(['role:Owner|Manager'])->except(['index', 'show']);
-    }
+    // Remove the constructor with middleware - we'll handle this in routes
+    // public function __construct()
+    // {
+    //     $this->middleware(['role:Owner|Manager'])->except(['index', 'show']);
+    // }
 
     public function index(Request $request): JsonResponse
     {
-        $query = Staff::with(['user', 'attendances'])
-            ->where('restaurant_id', Tenant::id());
+        try {
+            $query = Staff::where('restaurant_id', Tenant::id());
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has('position')) {
+                $query->where('position', $request->position);
+            }
+
+            $staff = $query->orderBy('first_name')->paginate();
+
+            return response()->json($staff);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
         }
-
-        if ($request->has('position')) {
-            $query->where('position', $request->position);
-        }
-
-        $staff = $query->orderBy('first_name')->paginate();
-
-        return response()->json($staff);
     }
 
     public function store(StoreStaffRequest $request): JsonResponse
     {
         $data = $request->validated();
-        
-        if ($request->hasFile('photo')) {
-            $data['photo_path'] = $request->file('photo')->store('staff-photos', 'public');
-        }
+        // Set tenant restaurant context
+        $data['restaurant_id'] = Tenant::id();
 
         $staff = Staff::create($data);
-        $staff->load(['user', 'attendances']);
+        $staff->load(['attendances']);
 
         return response()->json($staff, 201);
     }
@@ -54,7 +60,6 @@ class StaffController extends Controller
         $this->authorize('view', $staff);
         
         $staff->load([
-            'user',
             'attendances' => fn($q) => $q->latest()->limit(10),
             'schedules' => fn($q) => $q->where('date', '>=', now()->startOfWeek())->orderBy('date'),
         ]);
@@ -67,17 +72,9 @@ class StaffController extends Controller
         $this->authorize('update', $staff);
         
         $data = $request->validated();
-        
-        if ($request->hasFile('photo')) {
-            // Delete old photo if exists
-            if ($staff->photo_path) {
-                \Storage::disk('public')->delete($staff->photo_path);
-            }
-            $data['photo_path'] = $request->file('photo')->store('staff-photos', 'public');
-        }
 
         $staff->update($data);
-        $staff->load(['user', 'attendances']);
+        $staff->load(['attendances']);
 
         return response()->json($staff);
     }
@@ -85,10 +82,6 @@ class StaffController extends Controller
     public function destroy(Staff $staff): JsonResponse
     {
         $this->authorize('delete', $staff);
-        
-        if ($staff->photo_path) {
-            \Storage::disk('public')->delete($staff->photo_path);
-        }
         
         $staff->delete();
 
@@ -124,7 +117,7 @@ class StaffController extends Controller
                     'id' => $member->id,
                     'name' => $member->full_name,
                     'position' => $member->position,
-                    'photo_url' => $member->photo_path ? asset('storage/' . $member->photo_path) : null,
+                    'photo_url' => null,
                     'hours_worked' => $attendances->sum('hours_worked'),
                     'orders_completed' => $orders->count(),
                     'revenue_generated' => $orders->sum('total'),

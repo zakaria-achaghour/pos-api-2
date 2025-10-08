@@ -9,7 +9,38 @@ class Restaurant extends Model
 {
      use HasFactory;
 
-    protected $fillable = ['name','address','phone'];
+    protected $fillable = [
+        'name',
+        'slug', 
+        'address',
+        'city',
+        'postal_code',
+        'country',
+        'phone',
+        'email',
+        'website',
+        'cuisine_type',
+        'currency',
+        'timezone', 
+        'tax_rate',
+        'service_charge',
+        'status',
+        'subscription_type',
+        'subscription_start',
+        'subscription_end',
+        'subdomain',
+        'is_active',
+        'settings'
+    ];
+
+    protected $casts = [
+        'tax_rate' => 'decimal:2',
+        'service_charge' => 'decimal:2',
+        'is_active' => 'boolean',
+        'settings' => 'array',
+        'subscription_start' => 'date',
+        'subscription_end' => 'date',
+    ];
 
     public function users()        { return $this->hasMany(User::class); }
     public function tables()       { return $this->hasMany(Table::class); }
