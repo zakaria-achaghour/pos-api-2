@@ -16,8 +16,86 @@ use Infrastructure\Tenancy\Tenant;
 use App\Events\OrderStatusUpdated;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @OA\Tag(
+ *     name="Orders",
+ *     description="Order management operations for restaurant"
+ * )
+ */
 class OrderController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/api/orders",
+     *     tags={"Orders"},
+     *     summary="Get list of orders",
+     *     description="Retrieve a paginated list of orders with filtering options",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="Page number",
+     *         required=false,
+     *         @OA\Schema(type="integer", minimum=1, example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="status",
+     *         in="query",
+     *         description="Filter by order status",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"open", "preparing", "ready", "served", "paid", "cancelled"})
+     *     ),
+     *     @OA\Parameter(
+     *         name="table_id",
+     *         in="query",
+     *         description="Filter by table ID",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="waiter_id",
+     *         in="query",
+     *         description="Filter by waiter ID",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="date_from",
+     *         in="query",
+     *         description="Filter orders from this date",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date", example="2024-01-15")
+     *     ),
+     *     @OA\Parameter(
+     *         name="date_to",
+     *         in="query",
+     *         description="Filter orders until this date",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date", example="2024-01-20")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Orders retrieved successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/Order")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
     public function index(Request $request): JsonResponse
     {
         $query = Order::with(['table', 'waiter', 'orderItems.menuItem'])
@@ -48,6 +126,34 @@ class OrderController extends Controller
         return response()->json($orders);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/orders",
+     *     tags={"Orders"},
+     *     summary="Create a new order",
+     *     description="Create a new order with optional items",
+     *     security={{"bearer_token": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/CreateOrderRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Order created successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/Order")
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Bad request - Validation failed",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
     public function store(CreateOrderRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -71,6 +177,42 @@ class OrderController extends Controller
         return response()->json($order, 201);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/orders/{id}",
+     *     tags={"Orders"},
+     *     summary="Get a specific order",
+     *     description="Retrieve details of a specific order with related data",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Order ID",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Order retrieved successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/Order")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Forbidden - Insufficient permissions",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Order not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
     public function show(Order $order): JsonResponse
     {
         $this->authorize('view', $order);
@@ -85,6 +227,55 @@ class OrderController extends Controller
         return response()->json($order);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/orders/{id}/items",
+     *     tags={"Orders"},
+     *     summary="Add item to order",
+     *     description="Add a menu item to an existing order",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Order ID",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/AddOrderItemRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Item added to order successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Item added to order"),
+     *             @OA\Property(property="order_item", ref="#/components/schemas/OrderItem"),
+     *             @OA\Property(property="order_total", type="number", format="decimal", example="28.05")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Bad request - Validation failed",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Forbidden - Insufficient permissions",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Order or menu item not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
     public function addItem(Request $request, Order $order): JsonResponse
     {
         $this->authorize('update', $order);

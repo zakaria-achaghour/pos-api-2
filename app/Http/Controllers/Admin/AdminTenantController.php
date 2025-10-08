@@ -18,6 +18,77 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AdminTenantController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/api/admin/restaurants",
+     *     tags={"Admin - Restaurants"},
+     *     summary="List all restaurants",
+     *     description="Retrieve paginated list of all restaurants (SuperAdmin only)",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="search",
+     *         in="query",
+     *         description="Search by restaurant name, city, or address",
+     *         required=false,
+     *         @OA\Schema(type="string", example="Golden Fork")
+     *     ),
+     *     @OA\Parameter(
+     *         name="status",
+     *         in="query",
+     *         description="Filter by restaurant status",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"active", "inactive", "suspended"})
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page (max 100)",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=20, minimum=1, maximum=100)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Restaurants list retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="current_page", type="integer", example=1),
+     *             @OA\Property(property="data", type="array",
+     *                 @OA\Items(
+     *                     @OA\Property(property="id", type="integer", example=1),
+     *                     @OA\Property(property="name", type="string", example="The Golden Fork"),
+     *                     @OA\Property(property="slug", type="string", example="golden-fork"),
+     *                     @OA\Property(property="address", type="string", example="123 Main Street, Downtown"),
+     *                     @OA\Property(property="city", type="string", example="New York"),
+     *                     @OA\Property(property="country", type="string", example="USA"),
+     *                     @OA\Property(property="phone", type="string", example="+1-555-0101"),
+     *                     @OA\Property(property="email", type="string", example="info@goldenfork.com"),
+     *                     @OA\Property(property="cuisine_type", type="string", example="American"),
+     *                     @OA\Property(property="status", type="string", example="active"),
+     *                     @OA\Property(property="subscription_type", type="string", example="premium"),
+     *                     @OA\Property(property="created_at", type="string", format="datetime"),
+     *                     @OA\Property(property="updated_at", type="string", format="datetime")
+     *                 )
+     *             ),
+     *             @OA\Property(property="per_page", type="integer", example=20),
+     *             @OA\Property(property="total", type="integer", example=4),
+     *             @OA\Property(property="last_page", type="integer", example=1)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Forbidden - SuperAdmin access required",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="This action is unauthorized.")
+     *         )
+     *     )
+     * )
+     */
    public function listRestaurants(Request $r) {
         $q = Restaurant::query();
         
