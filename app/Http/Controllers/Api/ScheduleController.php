@@ -18,6 +18,46 @@ class ScheduleController extends Controller
         // $this->middleware(['role:Owner|Manager'])->except(['index', 'show']);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/schedules",
+     *     tags={"Schedules"},
+     *     summary="Get staff schedules",
+     *     description="Retrieve paginated list of staff schedules with optional filtering",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="staff_id",
+     *         in="query",
+     *         description="Filter by staff member ID",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="date_from",
+     *         in="query",
+     *         description="Filter schedules from this date",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="date_to",
+     *         in="query",
+     *         description="Filter schedules until this date",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Schedules retrieved successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/PaginatedResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
     public function index(Request $request): JsonResponse
     {
         $query = Schedule::with(['staff'])

@@ -21,6 +21,53 @@ class ReportController extends Controller
         // $this->middleware(['role:Owner|Manager']);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/reports/summary",
+     *     tags={"Reports"},
+     *     summary="Get business summary report",
+     *     description="Retrieve comprehensive business summary including sales, orders, and performance metrics",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="period",
+     *         in="query",
+     *         description="Time period for report",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"today", "week", "month"}, example="today")
+     *     ),
+     *     @OA\Parameter(
+     *         name="start_date",
+     *         in="query",
+     *         description="Custom start date",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="end_date",
+     *         in="query",
+     *         description="Custom end date",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Business summary retrieved successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="total_revenue", type="number", format="float"),
+     *             @OA\Property(property="total_orders", type="integer"),
+     *             @OA\Property(property="average_order_value", type="number", format="float"),
+     *             @OA\Property(property="top_items", type="array", @OA\Items(ref="#/components/schemas/MenuItem")),
+     *             @OA\Property(property="peak_hours", type="array", @OA\Items(type="integer"))
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
     public function summary(Request $request): JsonResponse
     {
         $period = $request->get('period', 'today');

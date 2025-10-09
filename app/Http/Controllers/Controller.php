@@ -47,6 +47,46 @@ namespace App\Http\Controllers;
  *     description="Order processing and management"
  * )
  * 
+ * @OA\Tag(
+ *     name="Menu Categories",
+ *     description="Menu category management (CRUD operations)"
+ * )
+ * 
+ * @OA\Tag(
+ *     name="Menu Items",
+ *     description="Menu item management (CRUD operations)"
+ * )
+ * 
+ * @OA\Tag(
+ *     name="Kitchen Management",
+ *     description="Kitchen ticket management and operations"
+ * )
+ * 
+ * @OA\Tag(
+ *     name="Attendance",
+ *     description="Staff attendance tracking and reporting"
+ * )
+ * 
+ * @OA\Tag(
+ *     name="Schedules",
+ *     description="Staff scheduling and shift management"
+ * )
+ * 
+ * @OA\Tag(
+ *     name="Reports",
+ *     description="Business reporting and analytics"
+ * )
+ * 
+ * @OA\Tag(
+ *     name="Analytics",
+ *     description="Dashboard metrics and analytics"
+ * )
+ * 
+ * @OA\Tag(
+ *     name="Table Analytics",
+ *     description="Table-specific analytics and metrics"
+ * )
+ * 
  * @OA\Schema(
  *     schema="PaginatedResponse",
  *     type="object",
@@ -143,6 +183,104 @@ namespace App\Http\Controllers;
  *     type="object",
  *     @OA\Property(property="menu_item_id", type="integer", example=1),
  *     @OA\Property(property="quantity", type="integer", example=2)
+ * )
+ * 
+ * @OA\Schema(
+ *     schema="MenuCategory",
+ *     type="object",
+ *     required={"name"},
+ *     @OA\Property(property="id", type="integer", example=1),
+ *     @OA\Property(property="name", type="string", example="Appetizers"),
+ *     @OA\Property(property="description", type="string", example="Light meals to start"),
+ *     @OA\Property(property="display_order", type="integer", example=1),
+ *     @OA\Property(property="is_active", type="boolean", example=true),
+ *     @OA\Property(property="restaurant_id", type="integer", example=1),
+ *     @OA\Property(property="created_at", type="string", format="date-time"),
+ *     @OA\Property(property="updated_at", type="string", format="date-time")
+ * )
+ * 
+ * @OA\Schema(
+ *     schema="MenuItem",
+ *     type="object",
+ *     required={"name", "price", "category_id"},
+ *     @OA\Property(property="id", type="integer", example=1),
+ *     @OA\Property(property="name", type="string", example="Caesar Salad"),
+ *     @OA\Property(property="description", type="string", example="Fresh romaine lettuce with caesar dressing"),
+ *     @OA\Property(property="price", type="number", format="float", example=12.99),
+ *     @OA\Property(property="category_id", type="integer", example=1),
+ *     @OA\Property(property="image_url", type="string", example="https://example.com/image.jpg"),
+ *     @OA\Property(property="is_available", type="boolean", example=true),
+ *     @OA\Property(property="preparation_time", type="integer", example=15),
+ *     @OA\Property(property="calories", type="integer", example=250),
+ *     @OA\Property(property="allergens", type="array", @OA\Items(type="string"), example={"gluten", "dairy"}),
+ *     @OA\Property(property="restaurant_id", type="integer", example=1),
+ *     @OA\Property(property="created_at", type="string", format="date-time"),
+ *     @OA\Property(property="updated_at", type="string", format="date-time"),
+ *     @OA\Property(property="category", ref="#/components/schemas/MenuCategory")
+ * )
+ * 
+ * @OA\Schema(
+ *     schema="KitchenTicket",
+ *     type="object",
+ *     @OA\Property(property="id", type="integer", example=1),
+ *     @OA\Property(property="order_id", type="integer", example=123),
+ *     @OA\Property(property="ticket_number", type="string", example="KT-001"),
+ *     @OA\Property(property="status", type="string", enum={"pending", "preparing", "ready"}, example="pending"),
+ *     @OA\Property(property="priority", type="string", enum={"normal", "rush", "urgent"}, example="normal"),
+ *     @OA\Property(property="assigned_chef_id", type="integer", example=5),
+ *     @OA\Property(property="cooking_station", type="string", example="Grill Station"),
+ *     @OA\Property(property="preparation_time", type="integer", example=25),
+ *     @OA\Property(property="estimated_completion", type="string", format="date-time"),
+ *     @OA\Property(property="special_instructions", type="string", example="No onions"),
+ *     @OA\Property(property="restaurant_id", type="integer", example=1),
+ *     @OA\Property(property="created_at", type="string", format="date-time"),
+ *     @OA\Property(property="updated_at", type="string", format="date-time"),
+ *     @OA\Property(property="order", ref="#/components/schemas/Order"),
+ *     @OA\Property(property="assignedChef", ref="#/components/schemas/Staff")
+ * )
+ * 
+ * @OA\Schema(
+ *     schema="Attendance",
+ *     type="object",
+ *     @OA\Property(property="id", type="integer", example=1),
+ *     @OA\Property(property="staff_id", type="integer", example=5),
+ *     @OA\Property(property="clock_in", type="string", format="date-time"),
+ *     @OA\Property(property="clock_out", type="string", format="date-time", nullable=true),
+ *     @OA\Property(property="hours_worked", type="number", format="float", example=8.5),
+ *     @OA\Property(property="break_minutes", type="integer", example=30),
+ *     @OA\Property(property="notes", type="string", example="Worked overtime"),
+ *     @OA\Property(property="restaurant_id", type="integer", example=1),
+ *     @OA\Property(property="created_at", type="string", format="date-time"),
+ *     @OA\Property(property="updated_at", type="string", format="date-time"),
+ *     @OA\Property(property="staff", ref="#/components/schemas/Staff")
+ * )
+ * 
+ * @OA\Schema(
+ *     schema="Schedule",
+ *     type="object",
+ *     @OA\Property(property="id", type="integer", example=1),
+ *     @OA\Property(property="staff_id", type="integer", example=5),
+ *     @OA\Property(property="date", type="string", format="date", example="2024-01-15"),
+ *     @OA\Property(property="start_time", type="string", format="time", example="09:00:00"),
+ *     @OA\Property(property="end_time", type="string", format="time", example="17:00:00"),
+ *     @OA\Property(property="shift_type", type="string", enum={"morning", "afternoon", "evening", "night"}, example="morning"),
+ *     @OA\Property(property="status", type="string", enum={"scheduled", "confirmed", "cancelled"}, example="scheduled"),
+ *     @OA\Property(property="notes", type="string", example="Training shift"),
+ *     @OA\Property(property="restaurant_id", type="integer", example=1),
+ *     @OA\Property(property="created_at", type="string", format="date-time"),
+ *     @OA\Property(property="updated_at", type="string", format="date-time"),
+ *     @OA\Property(property="staff", ref="#/components/schemas/Staff")
+ * )
+ * 
+ * @OA\Schema(
+ *     schema="Analytics",
+ *     type="object",
+ *     @OA\Property(property="total_sales", type="number", format="float", example=15420.50),
+ *     @OA\Property(property="total_orders", type="integer", example=342),
+ *     @OA\Property(property="average_order_value", type="number", format="float", example=45.12),
+ *     @OA\Property(property="peak_hours", type="array", @OA\Items(type="integer"), example={12, 13, 19, 20}),
+ *     @OA\Property(property="top_items", type="array", @OA\Items(ref="#/components/schemas/MenuItem")),
+ *     @OA\Property(property="staff_performance", type="array", @OA\Items(type="object"))
  * )
  */
 abstract class Controller

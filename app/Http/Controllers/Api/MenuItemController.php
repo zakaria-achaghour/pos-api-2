@@ -11,7 +11,55 @@ use Infrastructure\Tenancy\Tenant;
 class MenuItemController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * @OA\Get(
+     *     path="/api/items",
+     *     tags={"Menu Items"},
+     *     summary="Get list of menu items",
+     *     description="Retrieve paginated list of menu items for the authenticated restaurant",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="Page number for pagination",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=15)
+     *     ),
+     *     @OA\Parameter(
+     *         name="category_id",
+     *         in="query",
+     *         description="Filter by category ID",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of menu items retrieved successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="current_page", type="integer", example=1),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(ref="#/components/schemas/MenuItem")
+     *             ),
+     *             @OA\Property(property="last_page", type="integer", example=3),
+     *             @OA\Property(property="per_page", type="integer", example=15),
+     *             @OA\Property(property="total", type="integer", example=35)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
      */
     public function index()
     {
@@ -28,7 +76,49 @@ class MenuItemController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * @OA\Post(
+     *     path="/api/items",
+     *     tags={"Menu Items"},
+     *     summary="Create new menu item",
+     *     description="Create a new menu item for the authenticated restaurant",
+     *     security={{"bearer_token": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Menu item data",
+     *         @OA\JsonContent(
+     *             required={"name", "price", "category_id"},
+     *             @OA\Property(property="name", type="string", example="Caesar Salad"),
+     *             @OA\Property(property="description", type="string", example="Fresh romaine lettuce with caesar dressing"),
+     *             @OA\Property(property="price", type="number", format="float", example=12.99),
+     *             @OA\Property(property="category_id", type="integer", example=1),
+     *             @OA\Property(property="image_url", type="string", example="https://example.com/image.jpg"),
+     *             @OA\Property(property="is_available", type="boolean", example=true),
+     *             @OA\Property(property="preparation_time", type="integer", example=15),
+     *             @OA\Property(property="calories", type="integer", example=250),
+     *             @OA\Property(property="allergens", type="array", @OA\Items(type="string"), example={"gluten", "dairy"})
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Menu item created successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/MenuItem")
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Category not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
      */
     public function store(StoreMenuItemRequest  $request)
     {
@@ -44,7 +134,35 @@ class MenuItemController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * @OA\Get(
+     *     path="/api/items/{id}",
+     *     tags={"Menu Items"},
+     *     summary="Get specific menu item",
+     *     description="Retrieve details of a specific menu item with category information",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Menu item ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Menu item details retrieved successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/MenuItem")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Menu item not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
      */
     public function show(MenuItem $item)
     {
@@ -53,7 +171,52 @@ class MenuItemController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * @OA\Put(
+     *     path="/api/items/{id}",
+     *     tags={"Menu Items"},
+     *     summary="Update menu item",
+     *     description="Update an existing menu item",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Menu item ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Updated menu item data",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", example="Updated Caesar Salad"),
+     *             @OA\Property(property="description", type="string", example="Updated description"),
+     *             @OA\Property(property="price", type="number", format="float", example=14.99),
+     *             @OA\Property(property="category_id", type="integer", example=1),
+     *             @OA\Property(property="is_available", type="boolean", example=false),
+     *             @OA\Property(property="preparation_time", type="integer", example=20)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Menu item updated successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/MenuItem")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Menu item not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
      */
     public function update(UpdateMenuItemRequest  $request,  MenuItem $item)
     {
@@ -72,7 +235,34 @@ class MenuItemController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * @OA\Delete(
+     *     path="/api/items/{id}",
+     *     tags={"Menu Items"},
+     *     summary="Delete menu item",
+     *     description="Delete an existing menu item",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Menu item ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=204,
+     *         description="Menu item deleted successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Menu item not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
      */
     public function destroy(MenuItem $item)
     {

@@ -187,6 +187,623 @@
                 ]
             }
         },
+        "/api/dashboard/metrics": {
+            "get": {
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get dashboard metrics",
+                "description": "Retrieve key performance metrics for dashboard display",
+                "operationId": "c68a9c1c5b31904b59c97b5acaccca37",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "description": "Time period for metrics",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "today",
+                                "week",
+                                "month"
+                            ],
+                            "example": "today"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dashboard metrics retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "total_revenue": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 15420.5
+                                        },
+                                        "total_orders": {
+                                            "type": "integer",
+                                            "example": 342
+                                        },
+                                        "paid_orders": {
+                                            "type": "integer",
+                                            "example": 320
+                                        },
+                                        "cancelled_orders": {
+                                            "type": "integer",
+                                            "example": 22
+                                        },
+                                        "average_order_value": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 45.12
+                                        },
+                                        "active_staff": {
+                                            "type": "integer",
+                                            "example": 8
+                                        },
+                                        "occupied_tables": {
+                                            "type": "integer",
+                                            "example": 12
+                                        },
+                                        "table_turnover_rate": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 2.3
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/staff/attendance/clock-in": {
+            "post": {
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Clock in staff member",
+                "description": "Record staff member clock-in time and create attendance record",
+                "operationId": "c2f13dd7ae42f485633f8dfd4be0d19d",
+                "requestBody": {
+                    "description": "Clock-in data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "staff_id"
+                                ],
+                                "properties": {
+                                    "staff_id": {
+                                        "description": "ID of the staff member",
+                                        "type": "integer",
+                                        "example": 5
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Clocked in successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Clocked in successfully"
+                                        },
+                                        "attendance": {
+                                            "$ref": "#/components/schemas/Attendance"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Staff member is already clocked in",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Staff member is already clocked in"
+                                        },
+                                        "attendance": {
+                                            "$ref": "#/components/schemas/Attendance"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/staff/attendance/clock-out": {
+            "post": {
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Clock out staff member",
+                "description": "Record staff member clock-out time and calculate hours worked",
+                "operationId": "8f986c8a06923116367f6aec93a78812",
+                "requestBody": {
+                    "description": "Clock-out data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "staff_id"
+                                ],
+                                "properties": {
+                                    "staff_id": {
+                                        "description": "ID of the staff member",
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "break_minutes": {
+                                        "description": "Break time in minutes",
+                                        "type": "integer",
+                                        "example": 30
+                                    },
+                                    "notes": {
+                                        "description": "Additional notes",
+                                        "type": "string",
+                                        "example": "Worked overtime"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Clocked out successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Clocked out successfully"
+                                        },
+                                        "attendance": {
+                                            "$ref": "#/components/schemas/Attendance"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "No active clock-in found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No active clock-in found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/staff/attendance": {
+            "get": {
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Get attendance records",
+                "description": "Retrieve paginated list of attendance records with optional filtering",
+                "operationId": "4e29d65acf64f6fffa4dda645d395c2b",
+                "parameters": [
+                    {
+                        "name": "staff_id",
+                        "in": "query",
+                        "description": "Filter by staff member ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Filter records from this date",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2024-01-01"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Filter records until this date",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2024-01-31"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Attendance records retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/staff/attendance/summary": {
+            "get": {
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Get attendance summary",
+                "description": "Retrieve attendance summary grouped by staff member for specified period",
+                "operationId": "877ba1c5e6fd9443bdd6502cb3562ed5",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "description": "Time period for summary",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "today",
+                                "week",
+                                "month"
+                            ],
+                            "example": "week"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Attendance summary retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "staff_id": {
+                                                "type": "integer",
+                                                "example": 5
+                                            },
+                                            "staff_name": {
+                                                "type": "string",
+                                                "example": "John Doe"
+                                            },
+                                            "total_hours": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "example": 40.5
+                                            },
+                                            "total_days": {
+                                                "type": "integer",
+                                                "example": 5
+                                            },
+                                            "average_hours_per_day": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "example": 8.1
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/staff/attendance/reports/summary-pdf": {
+            "get": {
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Generate attendance summary PDF report",
+                "description": "Generate and download PDF report of attendance summary",
+                "operationId": "a904da98ee90d3981dc5d03005f97035",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "description": "Time period for report",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "today",
+                                "week",
+                                "month",
+                                "custom"
+                            ],
+                            "example": "week"
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Start date for custom period",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2024-01-01"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "End date for custom period",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2024-01-31"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF report generated successfully",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/staff/attendance/reports/detailed-pdf": {
+            "get": {
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Generate detailed attendance PDF report",
+                "description": "Generate and download detailed PDF report of attendance records",
+                "operationId": "b7dc32db057249d20120d8e32bbd3562",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "description": "Time period for report",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "today",
+                                "week",
+                                "month",
+                                "custom"
+                            ],
+                            "example": "week"
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Start date for custom period",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2024-01-01"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "End date for custom period",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2024-01-31"
+                        }
+                    },
+                    {
+                        "name": "staff_id",
+                        "in": "query",
+                        "description": "Filter by specific staff member",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 5
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF report generated successfully",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
         "/api/register": {
             "post": {
                 "tags": [
@@ -655,6 +1272,1361 @@
                 ]
             }
         },
+        "/api/kitchen/tickets": {
+            "get": {
+                "tags": [
+                    "Kitchen Management"
+                ],
+                "summary": "Get kitchen tickets",
+                "description": "Retrieve list of kitchen tickets with optional filtering",
+                "operationId": "168324457dc2f962053838c1e50df673",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by ticket status",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "pending",
+                                "preparing",
+                                "ready"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "priority",
+                        "in": "query",
+                        "description": "Filter by ticket priority",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "normal",
+                                "rush",
+                                "urgent"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "cooking_station",
+                        "in": "query",
+                        "description": "Filter by cooking station",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "Grill Station"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Kitchen tickets retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/KitchenTicket"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/kitchen/tickets/{kitchenTicket}": {
+            "get": {
+                "tags": [
+                    "Kitchen Management"
+                ],
+                "summary": "Get specific kitchen ticket",
+                "description": "Retrieve details of a specific kitchen ticket with order and chef information",
+                "operationId": "4094eed5404b21be1a6485c743a42b65",
+                "parameters": [
+                    {
+                        "name": "kitchenTicket",
+                        "in": "path",
+                        "description": "Kitchen ticket ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Kitchen ticket details retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/KitchenTicket"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Kitchen ticket not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/kitchen/tickets/{kitchenTicket}/assign": {
+            "post": {
+                "tags": [
+                    "Kitchen Management"
+                ],
+                "summary": "Assign kitchen ticket to chef",
+                "description": "Assign a kitchen ticket to a specific chef and optionally set cooking station",
+                "operationId": "ac327f404a43c1a1c8cd687220fd61cf",
+                "parameters": [
+                    {
+                        "name": "kitchenTicket",
+                        "in": "path",
+                        "description": "Kitchen ticket ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Assignment data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "chef_id"
+                                ],
+                                "properties": {
+                                    "chef_id": {
+                                        "description": "ID of the chef to assign",
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "cooking_station": {
+                                        "description": "Cooking station name",
+                                        "type": "string",
+                                        "example": "Grill Station"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Ticket assigned successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Ticket assigned successfully"
+                                        },
+                                        "ticket": {
+                                            "$ref": "#/components/schemas/KitchenTicket"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/kitchen/tickets/{kitchenTicket}/start": {
+            "post": {
+                "tags": [
+                    "Kitchen Management"
+                ],
+                "summary": "Start ticket preparation",
+                "description": "Mark a kitchen ticket as started and update order status to preparing",
+                "operationId": "0b34bba76a7e256b5c1c5f342a238bba",
+                "parameters": [
+                    {
+                        "name": "kitchenTicket",
+                        "in": "path",
+                        "description": "Kitchen ticket ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order preparation started",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Order preparation started"
+                                        },
+                                        "ticket": {
+                                            "$ref": "#/components/schemas/KitchenTicket"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Ticket cannot be started in current status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/kitchen/tickets/{kitchenTicket}/complete": {
+            "post": {
+                "tags": [
+                    "Kitchen Management"
+                ],
+                "summary": "Complete ticket preparation",
+                "description": "Mark a kitchen ticket as completed and order as ready for serving",
+                "operationId": "27765f66422922ea39c157c6e150a21c",
+                "parameters": [
+                    {
+                        "name": "kitchenTicket",
+                        "in": "path",
+                        "description": "Kitchen ticket ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order completed and ready for serving",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Order completed and ready for serving"
+                                        },
+                                        "ticket": {
+                                            "$ref": "#/components/schemas/KitchenTicket"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Ticket cannot be completed in current status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/kitchen/tickets/{kitchenTicket}/priority": {
+            "put": {
+                "tags": [
+                    "Kitchen Management"
+                ],
+                "summary": "Update ticket priority",
+                "description": "Update the priority level of a kitchen ticket",
+                "operationId": "242364620d82e0b23e08647f5c6ca0b7",
+                "parameters": [
+                    {
+                        "name": "kitchenTicket",
+                        "in": "path",
+                        "description": "Kitchen ticket ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Priority data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "priority"
+                                ],
+                                "properties": {
+                                    "priority": {
+                                        "type": "string",
+                                        "enum": [
+                                            "normal",
+                                            "rush",
+                                            "urgent"
+                                        ],
+                                        "example": "urgent"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Priority updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Priority updated successfully"
+                                        },
+                                        "ticket": {
+                                            "$ref": "#/components/schemas/KitchenTicket"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/kitchen/analytics": {
+            "get": {
+                "tags": [
+                    "Kitchen Management"
+                ],
+                "summary": "Get kitchen analytics",
+                "description": "Retrieve kitchen performance analytics and metrics",
+                "operationId": "394b45ad925e6032e834e1ee1e5a1755",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "description": "Time period for analytics",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "today",
+                                "week",
+                                "month"
+                            ],
+                            "example": "today"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Kitchen analytics retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "total_tickets": {
+                                            "type": "integer",
+                                            "example": 45
+                                        },
+                                        "completed_tickets": {
+                                            "type": "integer",
+                                            "example": 38
+                                        },
+                                        "pending_tickets": {
+                                            "type": "integer",
+                                            "example": 5
+                                        },
+                                        "preparing_tickets": {
+                                            "type": "integer",
+                                            "example": 2
+                                        },
+                                        "average_prep_time": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 18.5
+                                        },
+                                        "chef_performance": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "chef_id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "chef_name": {
+                                                        "type": "string"
+                                                    },
+                                                    "tickets_completed": {
+                                                        "type": "integer"
+                                                    },
+                                                    "average_prep_time": {
+                                                        "type": "number",
+                                                        "format": "float"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "station_utilization": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "cooking_station": {
+                                                        "type": "string"
+                                                    },
+                                                    "ticket_count": {
+                                                        "type": "integer"
+                                                    },
+                                                    "avg_prep_time": {
+                                                        "type": "number",
+                                                        "format": "float"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/categories": {
+            "get": {
+                "tags": [
+                    "Menu Categories"
+                ],
+                "summary": "Get list of menu categories",
+                "description": "Retrieve paginated list of menu categories for the authenticated restaurant",
+                "operationId": "8053b0be99f0c8b686d17d545281be46",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of menu categories retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/MenuCategory"
+                                            }
+                                        },
+                                        "last_page": {
+                                            "type": "integer",
+                                            "example": 3
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 15
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "example": 35
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Menu Categories"
+                ],
+                "summary": "Create new menu category",
+                "description": "Create a new menu category for the authenticated restaurant",
+                "operationId": "9764d15f4e9773f8cdb5287ac2d00677",
+                "requestBody": {
+                    "description": "Menu category data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Appetizers"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Light meals to start"
+                                    },
+                                    "display_order": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "is_active": {
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Menu category created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MenuCategory"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/categories/{id}": {
+            "get": {
+                "tags": [
+                    "Menu Categories"
+                ],
+                "summary": "Get specific menu category",
+                "description": "Retrieve details of a specific menu category",
+                "operationId": "49b512375bfcfc163196989807667c6b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Menu category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Menu category details retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MenuCategory"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Menu category not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Menu Categories"
+                ],
+                "summary": "Update menu category",
+                "description": "Update an existing menu category",
+                "operationId": "55525d5e5fd861f55ff5aa6917556595",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Menu category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated menu category data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Updated Appetizers"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Updated description"
+                                    },
+                                    "display_order": {
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "is_active": {
+                                        "type": "boolean",
+                                        "example": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Menu category updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MenuCategory"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Menu category not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Menu Categories"
+                ],
+                "summary": "Delete menu category",
+                "description": "Delete an existing menu category",
+                "operationId": "e1f78fc3969285fc9953e147c2430510",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Menu category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Menu category deleted successfully"
+                    },
+                    "404": {
+                        "description": "Menu category not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/items": {
+            "get": {
+                "tags": [
+                    "Menu Items"
+                ],
+                "summary": "Get list of menu items",
+                "description": "Retrieve paginated list of menu items for the authenticated restaurant",
+                "operationId": "69254261965b456d128d15f2b7c4cda6",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15
+                        }
+                    },
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "description": "Filter by category ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of menu items retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/MenuItem"
+                                            }
+                                        },
+                                        "last_page": {
+                                            "type": "integer",
+                                            "example": 3
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 15
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "example": 35
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Menu Items"
+                ],
+                "summary": "Create new menu item",
+                "description": "Create a new menu item for the authenticated restaurant",
+                "operationId": "354fedf84d71e303495b6ca8dd023055",
+                "requestBody": {
+                    "description": "Menu item data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "price",
+                                    "category_id"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Caesar Salad"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Fresh romaine lettuce with caesar dressing"
+                                    },
+                                    "price": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 12.99
+                                    },
+                                    "category_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "image_url": {
+                                        "type": "string",
+                                        "example": "https://example.com/image.jpg"
+                                    },
+                                    "is_available": {
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "preparation_time": {
+                                        "type": "integer",
+                                        "example": 15
+                                    },
+                                    "calories": {
+                                        "type": "integer",
+                                        "example": 250
+                                    },
+                                    "allergens": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "example": [
+                                            "gluten",
+                                            "dairy"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Menu item created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MenuItem"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Category not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/items/{id}": {
+            "get": {
+                "tags": [
+                    "Menu Items"
+                ],
+                "summary": "Get specific menu item",
+                "description": "Retrieve details of a specific menu item with category information",
+                "operationId": "f0822ac4ed25c71d1ea734ebf1b86dc1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Menu item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Menu item details retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MenuItem"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Menu item not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Menu Items"
+                ],
+                "summary": "Update menu item",
+                "description": "Update an existing menu item",
+                "operationId": "37145c8f34178f66cdd3ffee4985e34b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Menu item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated menu item data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Updated Caesar Salad"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Updated description"
+                                    },
+                                    "price": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 14.99
+                                    },
+                                    "category_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "is_available": {
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "preparation_time": {
+                                        "type": "integer",
+                                        "example": 20
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Menu item updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MenuItem"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Menu item not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Menu Items"
+                ],
+                "summary": "Delete menu item",
+                "description": "Delete an existing menu item",
+                "operationId": "a18f583baa7e079180e185b389677f6d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Menu item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Menu item deleted successfully"
+                    },
+                    "404": {
+                        "description": "Menu item not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
         "/api/orders": {
             "get": {
                 "tags": [
@@ -990,6 +2962,173 @@
                     },
                     "404": {
                         "description": "Order or menu item not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/reports/summary": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Get business summary report",
+                "description": "Retrieve comprehensive business summary including sales, orders, and performance metrics",
+                "operationId": "3a2f881744aa1af17114740501546356",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "description": "Time period for report",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "today",
+                                "week",
+                                "month"
+                            ],
+                            "example": "today"
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Custom start date",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "Custom end date",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Business summary retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "total_revenue": {
+                                            "type": "number",
+                                            "format": "float"
+                                        },
+                                        "total_orders": {
+                                            "type": "integer"
+                                        },
+                                        "average_order_value": {
+                                            "type": "number",
+                                            "format": "float"
+                                        },
+                                        "top_items": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/MenuItem"
+                                            }
+                                        },
+                                        "peak_hours": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/schedules": {
+            "get": {
+                "tags": [
+                    "Schedules"
+                ],
+                "summary": "Get staff schedules",
+                "description": "Retrieve paginated list of staff schedules with optional filtering",
+                "operationId": "f21805e74c0fcc7937d0464ff67212bd",
+                "parameters": [
+                    {
+                        "name": "staff_id",
+                        "in": "query",
+                        "description": "Filter by staff member ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Filter schedules from this date",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Filter schedules until this date",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Schedules retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1403,6 +3542,86 @@
                 "security": [
                     {
                         "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/tables/analytics": {
+            "get": {
+                "tags": [
+                    "Table Analytics"
+                ],
+                "summary": "Get table analytics",
+                "description": "Retrieve analytics data for all tables including occupancy and revenue metrics",
+                "operationId": "d93d4dadd2210217e3a076f08b463af5",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "description": "Time period for analytics",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "today",
+                                "week",
+                                "month"
+                            ],
+                            "example": "today"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Table analytics retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "table_id": {
+                                                "type": "integer"
+                                            },
+                                            "table_number": {
+                                                "type": "string"
+                                            },
+                                            "total_revenue": {
+                                                "type": "number",
+                                                "format": "float"
+                                            },
+                                            "total_orders": {
+                                                "type": "integer"
+                                            },
+                                            "occupancy_rate": {
+                                                "type": "number",
+                                                "format": "float"
+                                            },
+                                            "average_order_value": {
+                                                "type": "number",
+                                                "format": "float"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
                     }
                 ]
             }
@@ -1996,6 +4215,350 @@
                     }
                 },
                 "type": "object"
+            },
+            "MenuCategory": {
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Appetizers"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Light meals to start"
+                    },
+                    "display_order": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "restaurant_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "MenuItem": {
+                "required": [
+                    "name",
+                    "price",
+                    "category_id"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Caesar Salad"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Fresh romaine lettuce with caesar dressing"
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 12.99
+                    },
+                    "category_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "image_url": {
+                        "type": "string",
+                        "example": "https://example.com/image.jpg"
+                    },
+                    "is_available": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "preparation_time": {
+                        "type": "integer",
+                        "example": 15
+                    },
+                    "calories": {
+                        "type": "integer",
+                        "example": 250
+                    },
+                    "allergens": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "gluten",
+                            "dairy"
+                        ]
+                    },
+                    "restaurant_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "category": {
+                        "$ref": "#/components/schemas/MenuCategory"
+                    }
+                },
+                "type": "object"
+            },
+            "KitchenTicket": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "order_id": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "ticket_number": {
+                        "type": "string",
+                        "example": "KT-001"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "preparing",
+                            "ready"
+                        ],
+                        "example": "pending"
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": [
+                            "normal",
+                            "rush",
+                            "urgent"
+                        ],
+                        "example": "normal"
+                    },
+                    "assigned_chef_id": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "cooking_station": {
+                        "type": "string",
+                        "example": "Grill Station"
+                    },
+                    "preparation_time": {
+                        "type": "integer",
+                        "example": 25
+                    },
+                    "estimated_completion": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "special_instructions": {
+                        "type": "string",
+                        "example": "No onions"
+                    },
+                    "restaurant_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/Order"
+                    },
+                    "assignedChef": {
+                        "$ref": "#/components/schemas/Staff"
+                    }
+                },
+                "type": "object"
+            },
+            "Attendance": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "staff_id": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "clock_in": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "clock_out": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "hours_worked": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 8.5
+                    },
+                    "break_minutes": {
+                        "type": "integer",
+                        "example": 30
+                    },
+                    "notes": {
+                        "type": "string",
+                        "example": "Worked overtime"
+                    },
+                    "restaurant_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "staff": {
+                        "$ref": "#/components/schemas/Staff"
+                    }
+                },
+                "type": "object"
+            },
+            "Schedule": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "staff_id": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-01-15"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "format": "time",
+                        "example": "09:00:00"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "format": "time",
+                        "example": "17:00:00"
+                    },
+                    "shift_type": {
+                        "type": "string",
+                        "enum": [
+                            "morning",
+                            "afternoon",
+                            "evening",
+                            "night"
+                        ],
+                        "example": "morning"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "scheduled",
+                            "confirmed",
+                            "cancelled"
+                        ],
+                        "example": "scheduled"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "example": "Training shift"
+                    },
+                    "restaurant_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "staff": {
+                        "$ref": "#/components/schemas/Staff"
+                    }
+                },
+                "type": "object"
+            },
+            "Analytics": {
+                "properties": {
+                    "total_sales": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 15420.5
+                    },
+                    "total_orders": {
+                        "type": "integer",
+                        "example": 342
+                    },
+                    "average_order_value": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 45.12
+                    },
+                    "peak_hours": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            12,
+                            13,
+                            19,
+                            20
+                        ]
+                    },
+                    "top_items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MenuItem"
+                        }
+                    },
+                    "staff_performance": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -2027,6 +4590,38 @@
         {
             "name": "Staff Management",
             "description": "Staff CRUD operations and management"
+        },
+        {
+            "name": "Menu Categories",
+            "description": "Menu category management (CRUD operations)"
+        },
+        {
+            "name": "Menu Items",
+            "description": "Menu item management (CRUD operations)"
+        },
+        {
+            "name": "Kitchen Management",
+            "description": "Kitchen ticket management and operations"
+        },
+        {
+            "name": "Attendance",
+            "description": "Staff attendance tracking and reporting"
+        },
+        {
+            "name": "Schedules",
+            "description": "Staff scheduling and shift management"
+        },
+        {
+            "name": "Reports",
+            "description": "Business reporting and analytics"
+        },
+        {
+            "name": "Analytics",
+            "description": "Dashboard metrics and analytics"
+        },
+        {
+            "name": "Table Analytics",
+            "description": "Table-specific analytics and metrics"
         }
     ]
 }

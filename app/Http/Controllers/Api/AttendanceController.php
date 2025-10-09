@@ -14,6 +14,46 @@ use Infrastructure\Tenancy\Tenant;
 
 class AttendanceController extends Controller
 {
+    /**
+     * @OA\Post(
+     *     path="/api/staff/attendance/clock-in",
+     *     tags={"Attendance"},
+     *     summary="Clock in staff member",
+     *     description="Record staff member clock-in time and create attendance record",
+     *     security={{"bearer_token": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Clock-in data",
+     *         @OA\JsonContent(
+     *             required={"staff_id"},
+     *             @OA\Property(property="staff_id", type="integer", example=5, description="ID of the staff member")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Clocked in successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="message", type="string", example="Clocked in successfully"),
+     *             @OA\Property(property="attendance", ref="#/components/schemas/Attendance")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Staff member is already clocked in",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="message", type="string", example="Staff member is already clocked in"),
+     *             @OA\Property(property="attendance", ref="#/components/schemas/Attendance")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
     public function clockIn(Request $request): JsonResponse
     {
         $request->validate([
@@ -47,6 +87,47 @@ class AttendanceController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/staff/attendance/clock-out",
+     *     tags={"Attendance"},
+     *     summary="Clock out staff member",
+     *     description="Record staff member clock-out time and calculate hours worked",
+     *     security={{"bearer_token": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Clock-out data",
+     *         @OA\JsonContent(
+     *             required={"staff_id"},
+     *             @OA\Property(property="staff_id", type="integer", example=5, description="ID of the staff member"),
+     *             @OA\Property(property="break_minutes", type="integer", example=30, description="Break time in minutes"),
+     *             @OA\Property(property="notes", type="string", example="Worked overtime", description="Additional notes")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Clocked out successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="message", type="string", example="Clocked out successfully"),
+     *             @OA\Property(property="attendance", ref="#/components/schemas/Attendance")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="No active clock-in found",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="message", type="string", example="No active clock-in found")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
     public function clockOut(Request $request): JsonResponse
     {
         $request->validate([
@@ -82,6 +163,53 @@ class AttendanceController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/staff/attendance",
+     *     tags={"Attendance"},
+     *     summary="Get attendance records",
+     *     description="Retrieve paginated list of attendance records with optional filtering",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="staff_id",
+     *         in="query",
+     *         description="Filter by staff member ID",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="date_from",
+     *         in="query",
+     *         description="Filter records from this date",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date", example="2024-01-01")
+     *     ),
+     *     @OA\Parameter(
+     *         name="date_to",
+     *         in="query",
+     *         description="Filter records until this date",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date", example="2024-01-31")
+     *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="Page number for pagination",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Attendance records retrieved successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/PaginatedResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
     public function index(Request $request): JsonResponse
     {
         $query = Attendance::with(['staff'])
@@ -104,6 +232,42 @@ class AttendanceController extends Controller
         return response()->json($attendances);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/staff/attendance/summary",
+     *     tags={"Attendance"},
+     *     summary="Get attendance summary",
+     *     description="Retrieve attendance summary grouped by staff member for specified period",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="period",
+     *         in="query",
+     *         description="Time period for summary",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"today", "week", "month"}, example="week")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Attendance summary retrieved successfully",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="staff_id", type="integer", example=5),
+     *                 @OA\Property(property="staff_name", type="string", example="John Doe"),
+     *                 @OA\Property(property="total_hours", type="number", format="float", example=40.5),
+     *                 @OA\Property(property="total_days", type="integer", example=5),
+     *                 @OA\Property(property="average_hours_per_day", type="number", format="float", example=8.1)
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
     public function summary(Request $request): JsonResponse
     {
         $period = $request->get('period', 'week');
@@ -135,6 +299,54 @@ class AttendanceController extends Controller
     }
 
 
+    /**
+     * @OA\Get(
+     *     path="/api/staff/attendance/reports/summary-pdf",
+     *     tags={"Attendance"},
+     *     summary="Generate attendance summary PDF report",
+     *     description="Generate and download PDF report of attendance summary",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="period",
+     *         in="query",
+     *         description="Time period for report",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"today", "week", "month", "custom"}, example="week")
+     *     ),
+     *     @OA\Parameter(
+     *         name="start_date",
+     *         in="query",
+     *         description="Start date for custom period",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date", example="2024-01-01")
+     *     ),
+     *     @OA\Parameter(
+     *         name="end_date",
+     *         in="query",
+     *         description="End date for custom period",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date", example="2024-01-31")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="PDF report generated successfully",
+     *         @OA\MediaType(
+     *             mediaType="application/pdf",
+     *             @OA\Schema(type="string", format="binary")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
     public function generateSummaryPdf(Request $request)
     {
         $request->validate([
@@ -194,6 +406,61 @@ class AttendanceController extends Controller
         return $pdf->download($filename);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/staff/attendance/reports/detailed-pdf",
+     *     tags={"Attendance"},
+     *     summary="Generate detailed attendance PDF report",
+     *     description="Generate and download detailed PDF report of attendance records",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="period",
+     *         in="query",
+     *         description="Time period for report",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"today", "week", "month", "custom"}, example="week")
+     *     ),
+     *     @OA\Parameter(
+     *         name="start_date",
+     *         in="query",
+     *         description="Start date for custom period",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date", example="2024-01-01")
+     *     ),
+     *     @OA\Parameter(
+     *         name="end_date",
+     *         in="query",
+     *         description="End date for custom period",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date", example="2024-01-31")
+     *     ),
+     *     @OA\Parameter(
+     *         name="staff_id",
+     *         in="query",
+     *         description="Filter by specific staff member",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=5)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="PDF report generated successfully",
+     *         @OA\MediaType(
+     *             mediaType="application/pdf",
+     *             @OA\Schema(type="string", format="binary")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
     public function generateDetailedPdf(Request $request)
     {
         $request->validate([
