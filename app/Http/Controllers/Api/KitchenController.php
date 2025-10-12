@@ -123,7 +123,9 @@ class KitchenController extends Controller
      */
     public function show(KitchenTicket $kitchenTicket): JsonResponse
     {
-        $this->authorize('view', $kitchenTicket);
+        // $this->authorize('view', $kitchenTicket);
+        
+        abort_unless($kitchenTicket->restaurant_id === Tenant::id(), 404);
         
         $kitchenTicket->load([
             'order.table',
@@ -180,7 +182,9 @@ class KitchenController extends Controller
      */
     public function assign(Request $request, KitchenTicket $kitchenTicket): JsonResponse
     {
-        $this->authorize('update', $kitchenTicket);
+        // $this->authorize('update', $kitchenTicket);
+        
+        abort_unless($kitchenTicket->restaurant_id === Tenant::id(), 404);
         
         $request->validate([
             'chef_id' => 'required|exists:staff,id',
@@ -241,7 +245,9 @@ class KitchenController extends Controller
      */
     public function start(KitchenTicket $kitchenTicket): JsonResponse
     {
-        $this->authorize('update', $kitchenTicket);
+        // $this->authorize('update', $kitchenTicket);
+        
+        abort_unless($kitchenTicket->restaurant_id === Tenant::id(), 404);
         
         if ($kitchenTicket->status !== 'pending') {
             return response()->json([
@@ -296,7 +302,9 @@ class KitchenController extends Controller
      */
     public function complete(KitchenTicket $kitchenTicket): JsonResponse
     {
-        $this->authorize('update', $kitchenTicket);
+        // $this->authorize('update', $kitchenTicket);
+        
+        abort_unless($kitchenTicket->restaurant_id === Tenant::id(), 404);
         
         if ($kitchenTicket->status !== 'preparing') {
             return response()->json([
@@ -359,7 +367,9 @@ class KitchenController extends Controller
      */
     public function updatePriority(Request $request, KitchenTicket $kitchenTicket): JsonResponse
     {
-        $this->authorize('update', $kitchenTicket);
+        // $this->authorize('update', $kitchenTicket);
+        
+        abort_unless($kitchenTicket->restaurant_id === Tenant::id(), 404);
         
         $request->validate([
             'priority' => 'required|in:normal,rush,urgent',

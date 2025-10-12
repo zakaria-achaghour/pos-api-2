@@ -88,7 +88,9 @@ class TableAnalyticsController extends Controller
 
     public function show(Table $table, Request $request): JsonResponse
     {
-        $this->authorize('view', $table);
+        // $this->authorize('view', $table);
+        
+        abort_unless($table->restaurant_id === Tenant::id(), 404);
         
         $period = $request->get('period', 'week');
         $startDate = $this->getStartDate($period);

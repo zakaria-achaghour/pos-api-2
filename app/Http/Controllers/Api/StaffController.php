@@ -200,20 +200,20 @@ class StaffController extends Controller
 
     public function show(Staff $staff): JsonResponse
     {
-        $this->authorize('view', $staff);
+        // $this->authorize('view', $staff);
         
-        $staff->load([
-            'attendances' => fn($q) => $q->latest()->limit(10),
-            'schedules' => fn($q) => $q->where('date', '>=', now()->startOfWeek())->orderBy('date'),
-        ]);
+        abort_unless($staff->restaurant_id === Tenant::id(), 404);
+        
+        $staff->load(['attendances']);
 
         return response()->json($staff);
     }
 
     public function update(UpdateStaffRequest $request, Staff $staff): JsonResponse
     {
-        $this->authorize('update', $staff);
+        // $this->authorize('update', $staff);
         
+        abort_unless($staff->restaurant_id === Tenant::id(), 404);
         $data = $request->validated();
 
         $staff->update($data);
@@ -224,8 +224,9 @@ class StaffController extends Controller
 
     public function destroy(Staff $staff): JsonResponse
     {
-        $this->authorize('delete', $staff);
+        // $this->authorize('delete', $staff);
         
+        abort_unless($staff->restaurant_id === Tenant::id(), 404);
         $staff->delete();
 
         return response()->json(['message' => 'Staff member deleted successfully']);

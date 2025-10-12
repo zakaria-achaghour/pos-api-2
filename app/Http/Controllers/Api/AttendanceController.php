@@ -77,6 +77,7 @@ class AttendanceController extends Controller
 
         $attendance = Attendance::create([
             'staff_id' => $staff->id,
+            'restaurant_id' => Tenant::id(),
             'clock_in' => now(),
         ]);
         event(new StaffClockedIn($attendance));
