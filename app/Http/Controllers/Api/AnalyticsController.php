@@ -13,6 +13,42 @@ use Illuminate\Support\Facades\DB;
 
 class AnalyticsController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/api/dashboard/metrics",
+     *     tags={"Analytics"},
+     *     summary="Get dashboard metrics",
+     *     description="Retrieve key performance metrics for dashboard display",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="period",
+     *         in="query",
+     *         description="Time period for metrics",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"today", "week", "month"}, example="today")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Dashboard metrics retrieved successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="total_revenue", type="number", format="float", example=15420.50),
+     *             @OA\Property(property="total_orders", type="integer", example=342),
+     *             @OA\Property(property="paid_orders", type="integer", example=320),
+     *             @OA\Property(property="cancelled_orders", type="integer", example=22),
+     *             @OA\Property(property="average_order_value", type="number", format="float", example=45.12),
+     *             @OA\Property(property="active_staff", type="integer", example=8),
+     *             @OA\Property(property="occupied_tables", type="integer", example=12),
+     *             @OA\Property(property="table_turnover_rate", type="number", format="float", example=2.3)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
     public function dashboardMetrics(Request $request): JsonResponse
     {
         $period = $request->get('period', 'today');

@@ -6,35 +6,30 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('staff', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('restaurant_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('restaurant_id')->constrained()->onDelete('cascade');
             $table->string('employee_id')->unique();
             $table->string('first_name');
             $table->string('last_name');
+            $table->string('email')->unique();
             $table->string('phone')->nullable();
             $table->string('position');
-            $table->decimal('hourly_rate', 8, 2)->nullable();
-            $table->string('photo_path')->nullable();
-            $table->enum('status', ['active', 'inactive', 'terminated'])->default('active');
+            $table->string('department');
+            $table->decimal('hourly_rate', 8, 2);
             $table->date('hire_date');
-            $table->date('termination_date')->nullable();
+            $table->enum('status', ['active', 'inactive', 'terminated'])->default('active');
+            $table->string('emergency_contact_name')->nullable();
+            $table->string('emergency_contact_phone')->nullable();
             $table->timestamps();
             
-            $table->unique(['restaurant_id', 'employee_id']);
             $table->index(['restaurant_id', 'status']);
+            $table->index(['restaurant_id', 'position']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('staff');

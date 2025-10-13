@@ -1,4 +1,5 @@
 <?php
+// filepath: database/migrations/[timestamp]_create_orders_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -6,31 +7,33 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('restaurant_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('table_id')->nullable()->constrained('tables')->nullOnDelete();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete(); // who created
-            $table->string('order_number'); // readable per tenant
-            $table->enum('status', ['open','paid','cancelled'])->default('open');
+            $table->foreignId('restaurant_id')->constrained()->onDelete('cascade');
+            $table->foreignId('table_id')->constrained()->onDelete('cascade');
+            $table->foreignId('waiter_id')->nullable()->constrained('staff')->onDelete('set null');
+            $table->enum('status', ['open', 'paid', 'cancelled', 'refunded'])->default('open');
+            $table->enum('priority', ['normal', 'rush', 'urgent'])->default('normal');
+            $table->decimal('subtotal', 10, 2)->default(0);
+            $table->decimal('tax_amount', 10, 2)->default(0);
+            $table->decimal('discount_amount', 10, 2)->default(0);
             $table->decimal('total', 10, 2)->default(0);
-            $table->timestamp('placed_at');
-            $table->timestamp('closed_at')->nullable();
+            $table->enum('payment_method', ['cash', 'card', 'mobile', 'split'])->nullable();
+            $table->text('notes')->nullable();
+            $table->timestamp('placed_at')->nullable();
+            $table->timestamp('paid_at')->nullable();
             $table->timestamps();
-
-            $table->unique(['restaurant_id','order_number']); // per tenant
-            $table->index(['restaurant_id','status']);
+            
+            // Indexes
+            $table->index(['restaurant_id', 'status']);
+            $table->index(['restaurant_id', 'placed_at']);
+            $table->index(['table_id', 'status']);
+            $table->index(['waiter_id']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('orders');

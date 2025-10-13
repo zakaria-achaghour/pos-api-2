@@ -6,27 +6,27 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('menu_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('restaurant_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('category_id')->constrained('menu_categories')->cascadeOnDelete();
+            $table->foreignId('restaurant_id')->constrained()->onDelete('cascade');
+            $table->foreignId('category_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->text('description')->nullable();
-            $table->decimal('price', 10, 2);
-            $table->boolean('is_active')->default(true);
-            $table->unique(['restaurant_id','name']); // optional but handy
+            $table->decimal('price', 8, 2);
+            $table->decimal('cost', 8, 2)->nullable();
+            $table->boolean('is_available')->default(true);
+            $table->integer('preparation_time')->default(15); // minutes
+            $table->string('image_url')->nullable();
+            $table->json('allergens')->nullable();
             $table->timestamps();
+            
+            $table->index(['restaurant_id', 'category_id']);
+            $table->index(['restaurant_id', 'is_available']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('menu_items');

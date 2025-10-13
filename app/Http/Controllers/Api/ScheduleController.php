@@ -1,108 +1,277 @@
 <?php
 
-use App\Http\Controllers\Admin\AdminTenantController;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\MenuCategoryController;
-use App\Http\Controllers\Api\MenuItemController;
-use App\Http\Controllers\Api\TableController;
-use App\Http\Controllers\Api\OrderController;
-use App\Http\Controllers\Api\ReportController;
-use App\Http\Controllers\Api\StaffController;
-use App\Http\Controllers\Api\AttendanceController;
-use App\Http\Controllers\Api\AnalyticsController;
-use App\Http\Controllers\Api\KitchenController;
-use App\Http\Controllers\Api\TableAnalyticsController;
-use App\Http\Controllers\Api\ScheduleController;
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\CreateScheduleRequest;
+use App\Http\Requests\UpdateScheduleRequest;
+use App\Models\Schedule;
+use App\Models\Staff;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+use Illuminate\Http\JsonResponse;
+use Infrastructure\Tenancy\Tenant;
 
-// ---------- AUTH ----------
-Route::post('/register', [AuthController::class, 'register']); // optional
-Route::post('/login',    [AuthController::class, 'login']);
-Route::post('/refresh',  [AuthController::class, 'refresh'])->middleware('auth:api');
-Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:api');
+class ScheduleController extends Controller
+{
+    public function __construct()
+    {
+        // $this->middleware(['role:Owner|Manager'])->except(['index', 'show']);
+    }
 
-Route::prefix('admin')
-  ->middleware(['auth:api','role:SuperAdmin'])
-  ->group(function () {
-    Route::get('restaurants', [AdminTenantController::class, 'listRestaurants']);
-    Route::get('restaurants/{restaurant}/overview', [AdminTenantController::class, 'overview']);
-    Route::get('restaurants/{restaurant}/tables', [AdminTenantController::class, 'tables']);
-    Route::get('restaurants/{restaurant}/menu/categories', [AdminTenantController::class, 'categories']);
-    Route::get('restaurants/{restaurant}/menu/items', [AdminTenantController::class, 'items']);
-    Route::get('restaurants/{restaurant}/orders', [AdminTenantController::class, 'orders']);
-    Route::get('restaurants/{restaurant}/reports/summary', [AdminTenantController::class, 'dailySummary']);
-    
-    // Optional: impersonation (returns JWT for that user; lock this down!)
-    Route::post('impersonate/{user}', [AdminTenantController::class, 'impersonate']);
-});
+    /**
+     * @OA\Get(
+     *     path="/api/schedules",
+     *     tags={"Schedules"},
+     *     summary="Get staff schedules",
+     *     description="Retrieve paginated list of staff schedules with optional filtering",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="staff_id",
+     *         in="query",
+     *         description="Filter by staff member ID",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="date_from",
+     *         in="query",
+     *         description="Filter schedules from this date",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="date_to",
+     *         in="query",
+     *         description="Filter schedules until this date",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Schedules retrieved successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/PaginatedResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     *     )
+     * )
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $query = Schedule::with(['staff'])
+            ->where('restaurant_id', Tenant::id());
 
-// ---------- PROTECTED ----------
-Route::middleware(['auth:api','tenant'])->group(function () {
-    Route::get('/me', [AuthController::class, 'me']);
+        if ($request->has('staff_id')) {
+            $query->where('staff_id', $request->staff_id);
+        }
 
-    // Basic Resources
-    Route::apiResource('tables', TableController::class);
-    Route::apiResource('categories', MenuCategoryController::class);
-    Route::apiResource('items', MenuItemController::class);
+        if ($request->has('date_from')) {
+            $query->where('date', '>=', $request->date_from);
+        }
 
-    // Orders
-    Route::get('orders', [OrderController::class,'index']);
-    Route::post('orders', [OrderController::class,'store']);
-    Route::get('orders/{order}', [OrderController::class,'show']);
-    Route::post('orders/{order}/items', [OrderController::class,'addItem']);
-    Route::put('orders/{order}/items/{orderItem}', [OrderController::class,'updateItem']);
-    Route::delete('orders/{order}/items/{orderItem}', [OrderController::class,'removeItem']);
-    Route::post('orders/{order}/close', [OrderController::class,'close']);
+        if ($request->has('date_to')) {
+            $query->where('date', '<=', $request->date_to);
+        }
 
-    // Kitchen Management
-    Route::prefix('kitchen')->group(function () {
-        Route::get('tickets', [KitchenController::class, 'index']);
-        Route::get('tickets/{kitchenTicket}', [KitchenController::class, 'show']);
-        Route::post('tickets/{kitchenTicket}/assign', [KitchenController::class, 'assign']);
-        Route::post('tickets/{kitchenTicket}/start', [KitchenController::class, 'start']);
-        Route::post('tickets/{kitchenTicket}/complete', [KitchenController::class, 'complete']);
-        Route::put('tickets/{kitchenTicket}/priority', [KitchenController::class, 'updatePriority']);
-        Route::get('analytics', [KitchenController::class, 'analytics']);
-    });
+        if ($request->has('shift_type')) {
+            $query->where('shift_type', $request->shift_type);
+        }
 
-    // Reports
-    Route::prefix('reports')->group(function () {
-        Route::get('summary', [ReportController::class, 'summary']);
-        Route::get('sales', [ReportController::class, 'sales']);
-        Route::get('items', [ReportController::class, 'items']);
-        Route::get('staff', [ReportController::class, 'staff']);
-        Route::post('export', [ReportController::class, 'export']);
-    });
+        $schedules = $query->orderBy('date')->orderBy('start_time')->paginate();
 
-    // Staff Management
-    Route::apiResource('staff', StaffController::class);
-    Route::get('staff/performance/summary', [StaffController::class, 'performance']);
-    
-    // Attendance Management
-    Route::prefix('staff/attendance')->group(function () {
-        Route::post('clock-in', [AttendanceController::class, 'clockIn']);
-        Route::post('clock-out', [AttendanceController::class, 'clockOut']);
-        Route::get('/', [AttendanceController::class, 'index']);
-        Route::get('summary', [AttendanceController::class, 'summary']);
-    });
-    
-    // Analytics & Dashboard
-    Route::prefix('dashboard')->group(function () {
-        Route::get('metrics', [AnalyticsController::class, 'dashboardMetrics']);
-        Route::get('charts', [AnalyticsController::class, 'salesCharts']);
-        Route::get('top-items', [AnalyticsController::class, 'topItems']);
-    });
+        return response()->json($schedules);
+    }
 
-    // Table Analytics
-    Route::prefix('tables')->group(function () {
-        Route::get('analytics', [TableAnalyticsController::class, 'index']);
-        Route::get('{table}/analytics', [TableAnalyticsController::class, 'show']);
-        Route::get('occupancy-rates', [TableAnalyticsController::class, 'occupancyRates']);
-        Route::get('revenue-per-table', [TableAnalyticsController::class, 'revenuePerTable']);
-        Route::put('layout', [TableAnalyticsController::class, 'updateLayout']);
-    });
-    
-    // Staff Performance (separate from staff resource)
-    Route::get('analytics/staff-performance', [StaffController::class, 'performance']);
-});
+    public function store(Request $request): JsonResponse
+    {
+        $request->validate([
+            'staff_id' => 'required|exists:staff,id',
+            'date' => 'required|date|after_or_equal:today',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'shift_type' => 'required|in:morning,afternoon,evening,night',
+            'notes' => 'nullable|string|max:500',
+        ]);
+        
+        $data = $request->all();
+        $data['restaurant_id'] = Tenant::id();
+        
+        // Check for conflicts
+        $conflict = Schedule::where('restaurant_id', Tenant::id())
+            ->where('staff_id', $data['staff_id'])
+            ->where('date', $data['date'])
+            ->exists();
+
+        if ($conflict) {
+            return response()->json([
+                'message' => 'Staff member already has a schedule for this date'
+            ], 422);
+        }
+
+        $schedule = Schedule::create($data);
+        $schedule->load('staff');
+
+        return response()->json($schedule, 201);
+    }
+
+    public function show(Schedule $schedule): JsonResponse
+    {
+        // Basic authorization - ensure schedule belongs to current tenant
+        if ($schedule->restaurant_id !== Tenant::id()) {
+            abort(404);
+        }
+        
+        $schedule->load('staff');
+
+        return response()->json($schedule);
+    }
+
+    public function update(Request $request, Schedule $schedule): JsonResponse
+    {
+        // Basic authorization - ensure schedule belongs to current tenant
+        if ($schedule->restaurant_id !== Tenant::id()) {
+            abort(404);
+        }
+        
+        $request->validate([
+            'staff_id' => 'sometimes|exists:staff,id',
+            'date' => 'sometimes|date',
+            'start_time' => 'sometimes|date_format:H:i',
+            'end_time' => 'sometimes|date_format:H:i|after:start_time',
+            'shift_type' => 'sometimes|in:morning,afternoon,evening,night',
+            'notes' => 'nullable|string|max:500',
+        ]);
+        
+        $data = $request->all();
+        
+        // Check for conflicts if changing staff or date
+        if (($data['staff_id'] ?? $schedule->staff_id) !== $schedule->staff_id || 
+            ($data['date'] ?? $schedule->date) !== $schedule->date) {
+            
+            $conflict = Schedule::where('restaurant_id', Tenant::id())
+                ->where('staff_id', $data['staff_id'] ?? $schedule->staff_id)
+                ->where('date', $data['date'] ?? $schedule->date)
+                ->where('id', '!=', $schedule->id)
+                ->exists();
+
+            if ($conflict) {
+                return response()->json([
+                    'message' => 'Staff member already has a schedule for this date'
+                ], 422);
+            }
+        }
+
+        $schedule->update($data);
+        $schedule->load('staff');
+
+        return response()->json($schedule);
+    }
+
+    public function destroy(Schedule $schedule): JsonResponse
+    {
+        // Basic authorization - ensure schedule belongs to current tenant
+        if ($schedule->restaurant_id !== Tenant::id()) {
+            abort(404);
+        }
+        
+        $schedule->delete();
+
+        return response()->json(['message' => 'Schedule deleted successfully']);
+    }
+
+    public function weekly(Request $request): JsonResponse
+    {
+        $request->validate([
+            'week_start' => 'nullable|date',
+            'staff_id' => 'nullable|exists:staff,id',
+        ]);
+
+        $weekStart = $request->get('week_start') ? 
+            \Carbon\Carbon::parse($request->get('week_start'))->startOfWeek() :
+            now()->startOfWeek();
+        
+        $weekEnd = $weekStart->copy()->endOfWeek();
+
+        $query = Schedule::with(['staff'])
+            ->where('restaurant_id', Tenant::id())
+            ->whereBetween('date', [$weekStart->toDateString(), $weekEnd->toDateString()]);
+
+        if ($request->has('staff_id')) {
+            $query->where('staff_id', $request->staff_id);
+        }
+
+        $schedules = $query->orderBy('date')->orderBy('start_time')->get();
+
+        // Group by day of week
+        $weeklySchedule = collect(range(0, 6))->mapWithKeys(function ($dayOfWeek) use ($weekStart, $schedules) {
+            $date = $weekStart->copy()->addDays($dayOfWeek);
+            $daySchedules = $schedules->filter(function ($schedule) use ($date) {
+                return $schedule->date->equalTo($date);
+            });
+
+            return [
+                $date->format('Y-m-d') => [
+                    'date' => $date->format('Y-m-d'),
+                    'day_name' => $date->format('l'),
+                    'schedules' => $daySchedules->values(),
+                ]
+            ];
+        });
+
+        return response()->json([
+            'week_start' => $weekStart->format('Y-m-d'),
+            'week_end' => $weekEnd->format('Y-m-d'),
+            'weekly_schedule' => $weeklySchedule,
+        ]);
+    }
+
+    public function bulk(Request $request): JsonResponse
+    {
+        $request->validate([
+            'schedules' => 'required|array',
+            'schedules.*.staff_id' => 'required|exists:staff,id',
+            'schedules.*.date' => 'required|date',
+            'schedules.*.start_time' => 'required|date_format:H:i',
+            'schedules.*.end_time' => 'required|date_format:H:i|after:schedules.*.start_time',
+            'schedules.*.shift_type' => 'required|in:morning,afternoon,evening,night',
+            'schedules.*.notes' => 'nullable|string|max:500',
+        ]);
+
+        $createdSchedules = [];
+        $errors = [];
+
+        foreach ($request->schedules as $index => $scheduleData) {
+            // Check for conflicts
+            $conflict = Schedule::where('restaurant_id', Tenant::id())
+                ->where('staff_id', $scheduleData['staff_id'])
+                ->where('date', $scheduleData['date'])
+                ->exists();
+
+            if ($conflict) {
+                $errors[] = [
+                    'index' => $index,
+                    'message' => 'Staff member already has a schedule for this date',
+                    'data' => $scheduleData
+                ];
+                continue;
+            }
+
+            $schedule = Schedule::create(array_merge($scheduleData, [
+                'restaurant_id' => Tenant::id()
+            ]));
+            
+            $schedule->load('staff');
+            $createdSchedules[] = $schedule;
+        }
+
+        return response()->json([
+            'message' => 'Bulk schedule creation completed',
+            'created' => count($createdSchedules),
+            'errors' => count($errors),
+            'schedules' => $createdSchedules,
+            'failed' => $errors,
+        ]);
+    }
+}
