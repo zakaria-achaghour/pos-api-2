@@ -3626,6 +3626,314 @@
                 ]
             }
         },
+        "/api/tables/{table}/analytics": {
+            "get": {
+                "tags": [
+                    "Table Analytics"
+                ],
+                "summary": "Get analytics for specific table",
+                "description": "Retrieve detailed analytics data for a specific table",
+                "operationId": "7044ae45a2af9344cf44d87c661dd73b",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "path",
+                        "description": "Table ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "description": "Time period for analytics",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "today",
+                                "week",
+                                "month"
+                            ],
+                            "example": "week"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Table analytics retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "table": {
+                                            "$ref": "#/components/schemas/Table"
+                                        },
+                                        "analytics": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "daily_orders": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "summary": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Table not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/tables/occupancy-rates": {
+            "get": {
+                "tags": [
+                    "Table Analytics"
+                ],
+                "summary": "Get table occupancy rates",
+                "description": "Retrieve occupancy rates for all tables",
+                "operationId": "c49d081e6617a8cdad9028950539e012",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "description": "Time period for analytics",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "today",
+                                "week",
+                                "month"
+                            ],
+                            "example": "today"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Table occupancy rates retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "table_id": {
+                                                "type": "integer"
+                                            },
+                                            "table_number": {
+                                                "type": "string"
+                                            },
+                                            "capacity": {
+                                                "type": "integer"
+                                            },
+                                            "status": {
+                                                "type": "string"
+                                            },
+                                            "orders_count": {
+                                                "type": "integer"
+                                            },
+                                            "revenue": {
+                                                "type": "number",
+                                                "format": "float"
+                                            },
+                                            "occupancy_rate": {
+                                                "type": "number",
+                                                "format": "float"
+                                            },
+                                            "last_occupied": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "nullable": true
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/tables/revenue-per-table": {
+            "get": {
+                "tags": [
+                    "Table Analytics"
+                ],
+                "summary": "Get revenue per table",
+                "description": "Retrieve revenue analytics grouped by table",
+                "operationId": "7674aa9e63f8204c5ccdb2ec02cbe42e",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "description": "Time period for analytics",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "today",
+                                "week",
+                                "month"
+                            ],
+                            "example": "today"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Revenue per table retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "table_id": {
+                                                "type": "integer"
+                                            },
+                                            "table_number": {
+                                                "type": "string"
+                                            },
+                                            "capacity": {
+                                                "type": "integer"
+                                            },
+                                            "order_count": {
+                                                "type": "integer"
+                                            },
+                                            "total_revenue": {
+                                                "type": "number",
+                                                "format": "float"
+                                            },
+                                            "average_order_value": {
+                                                "type": "number",
+                                                "format": "float"
+                                            },
+                                            "revenue_per_seat": {
+                                                "type": "number",
+                                                "format": "float"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/tables/layout": {
+            "put": {
+                "tags": [
+                    "Table Analytics"
+                ],
+                "summary": "Update table layout",
+                "description": "Update the grid positions of tables for layout management",
+                "operationId": "87dfa20e89442f8fa8d32c17e9f19a35",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "tables": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "Table ID",
+                                                    "type": "integer"
+                                                },
+                                                "grid_x": {
+                                                    "description": "X coordinate in grid",
+                                                    "type": "integer"
+                                                },
+                                                "grid_y": {
+                                                    "description": "Y coordinate in grid",
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Table layout updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Table layout updated successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
         "/api/tables": {
             "get": {
                 "tags": [
@@ -3670,6 +3978,40 @@
                                 "occupied",
                                 "reserved",
                                 "maintenance"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "section",
+                        "in": "query",
+                        "description": "Filter by table section",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "capacity",
+                        "in": "query",
+                        "description": "Filter by table capacity",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "shape",
+                        "in": "query",
+                        "description": "Filter by table shape",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "round",
+                                "square",
+                                "rectangular",
+                                "oval"
                             ]
                         }
                     }
