@@ -49,6 +49,15 @@ Route::prefix('admin')
 Route::middleware(['auth:api','tenant'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
 
+    // Table Analytics (must come before table resource routes)
+    Route::prefix('tables')->group(function () {
+        Route::get('analytics', [TableAnalyticsController::class, 'index']);
+        Route::get('occupancy-rates', [TableAnalyticsController::class, 'occupancyRates']);
+        Route::get('revenue-per-table', [TableAnalyticsController::class, 'revenuePerTable']);
+        Route::put('layout', [TableAnalyticsController::class, 'updateLayout']);
+        Route::get('{table}/analytics', [TableAnalyticsController::class, 'show']);
+    });
+
     // Basic Resources
     Route::apiResource('tables', TableController::class);
     Route::apiResource('categories', MenuCategoryController::class);
@@ -110,14 +119,6 @@ Route::middleware(['auth:api','tenant'])->group(function () {
         Route::get('top-items', [AnalyticsController::class, 'topItems']);
     });
 
-    // Table Analytics
-    Route::prefix('tables')->group(function () {
-        Route::get('analytics', [TableAnalyticsController::class, 'index']);
-        Route::get('{table}/analytics', [TableAnalyticsController::class, 'show']);
-        Route::get('occupancy-rates', [TableAnalyticsController::class, 'occupancyRates']);
-        Route::get('revenue-per-table', [TableAnalyticsController::class, 'revenuePerTable']);
-        Route::put('layout', [TableAnalyticsController::class, 'updateLayout']);
-    });
     
     // Staff Performance (separate from staff resource)
     Route::get('analytics/staff-performance', [StaffController::class, 'performance']);

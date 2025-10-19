@@ -50,6 +50,27 @@ class TableController extends Controller
      *         required=false,
      *         @OA\Schema(type="string", enum={"available", "occupied", "reserved", "maintenance"})
      *     ),
+     *     @OA\Parameter(
+     *         name="section",
+     *         in="query",
+     *         description="Filter by table section",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="capacity",
+     *         in="query",
+     *         description="Filter by table capacity",
+     *         required=false,
+     *         @OA\Schema(type="integer", minimum=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="shape",
+     *         in="query",
+     *         description="Filter by table shape",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"round", "square", "rectangular", "oval"})
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Tables retrieved successfully",
@@ -78,10 +99,40 @@ class TableController extends Controller
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $tables = Table::where('restaurant_id', Tenant::id())->orderBy('number')->paginate();
+            $query = Table::where('restaurant_id', Tenant::id());
+            
+            // Filter by status if provided
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+            
+            // Filter by section if provided
+            if ($request->has('section')) {
+                $query->where('section', $request->section);
+            }
+            
+            // Filter by capacity if provided
+            if ($request->has('capacity')) {
+                $query->where('capacity', $request->capacity);
+            }
+            
+            // Filter by shape if provided
+            if ($request->has('shape')) {
+                $query->where('shape', $request->shape);
+            }
+            
+            // Order by table number
+            $query->orderBy('number');
+            
+            // Handle pagination
+            $perPage = $request->input('per_page', 15);
+            $perPage = min(max($perPage, 1), 100); // Limit between 1 and 100
+            
+            $tables = $query->paginate($perPage);
+            
             return response()->json($tables);
         } catch (\Exception $e) {
             return response()->json([
