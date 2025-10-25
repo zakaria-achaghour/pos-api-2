@@ -11,7 +11,7 @@ class AddItemRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return auth()->check(); // All authenticated users can add items to orders
     }
 
     /**

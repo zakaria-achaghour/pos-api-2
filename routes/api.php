@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminTenantController;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\MenuCategoryController;
+use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\MenuItemController;
 use App\Http\Controllers\Api\TableController;
 use App\Http\Controllers\Api\OrderController;
@@ -60,7 +60,7 @@ Route::middleware(['auth:api','tenant'])->group(function () {
 
     // Basic Resources
     Route::apiResource('tables', TableController::class);
-    Route::apiResource('categories', MenuCategoryController::class);
+    Route::apiResource('categories', CategoryController::class);
     Route::apiResource('items', MenuItemController::class);
 
     // Orders

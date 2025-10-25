@@ -11,7 +11,7 @@ class CloseOrderRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return auth()->check(); // All authenticated users can close orders
     }
 
     /**

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\MenuCategory;
+use App\Models\Category;
 use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\Restaurant;
@@ -260,7 +260,7 @@ class AdminTenantController extends Controller
         return Tenant::with($restaurant->id, function () {
             return [
                 'tables' => Table::count(),
-                'categories' => MenuCategory::count(),
+                'categories' => Category::count(),
                 'items' => MenuItem::count(),
                 'orders_today' => Order::whereDate('placed_at', now()->toDateString())->count(),
                 'sales_today' => DB::table('payments')
@@ -276,7 +276,7 @@ class AdminTenantController extends Controller
     }
 
     public function categories(Restaurant $restaurant) {
-        return Tenant::with($restaurant->id, fn() => MenuCategory::orderBy('name')->paginate(100));
+        return Tenant::with($restaurant->id, fn() => Category::orderBy('name')->paginate(100));
     }
 
     public function items(Restaurant $restaurant) {

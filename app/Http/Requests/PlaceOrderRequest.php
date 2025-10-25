@@ -11,7 +11,7 @@ class PlaceOrderRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return auth()->check(); // All authenticated users can place orders
     }
 
     /**

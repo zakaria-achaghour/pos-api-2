@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\MenuCategory;
+use App\Http\Requests\StoreMenuItemRequest;
+use App\Http\Requests\UpdateMenuItemRequest;
+use App\Models\Category;
 use App\Models\MenuItem;
 use Illuminate\Http\Request;
 use Infrastructure\Tenancy\Tenant;
@@ -32,11 +34,32 @@ class MenuItemController extends Controller
      *         @OA\Schema(type="integer", example=15)
      *     ),
      *     @OA\Parameter(
+     *         name="limit",
+     *         in="query",
+     *         description="Alias for per_page - Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=50)
+     *     ),
+     *     @OA\Parameter(
      *         name="category_id",
      *         in="query",
      *         description="Filter by category ID",
      *         required=false,
      *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="is_available",
+     *         in="query",
+     *         description="Filter by availability status (true/false or 1/0)",
+     *         required=false,
+     *         @OA\Schema(type="string", example="true")
+     *     ),
+     *     @OA\Parameter(
+     *         name="search",
+     *         in="query",
+     *         description="Search items by name",
+     *         required=false,
+     *         @OA\Schema(type="string", example="Caesar")
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -63,16 +86,34 @@ class MenuItemController extends Controller
      */
     public function index()
     {
-        $q = MenuItem::where('restaurant_id', Tenant::id())->with('category');
-        if (request('category_id')) {
-            // ensure the category belongs to tenant
+        $perPage = request('per_page', request('limit', 15));
+        
+        $query = MenuItem::where('restaurant_id', Tenant::id())->with('category');
+        
+        // Filter by category
+        if (request()->filled('category_id')) {
+            // Ensure the category belongs to tenant
             abort_unless(
-                MenuCategory::where('id', request('category_id'))
+                Category::where('id', request('category_id'))
                 ->where('restaurant_id', Tenant::id())->exists(), 404
             );
-            $q->where('category_id', request('category_id'));
+            $query->where('category_id', request('category_id'));
         }
-        return $q->orderBy('name')->paginate();
+        
+        // Filter by is_available
+        if (request()->has('is_available')) {
+            $isAvailable = filter_var(request('is_available'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($isAvailable !== null) {
+                $query->where('is_available', $isAvailable);
+            }
+        }
+        
+        // Search by name
+        if (request()->filled('search')) {
+            $query->where('name', 'ILIKE', '%' . request('search') . '%');
+        }
+        
+        return $query->orderBy('name')->paginate($perPage);
     }
 
     /**
@@ -120,13 +161,13 @@ class MenuItemController extends Controller
      *     )
      * )
      */
-    public function store(StoreMenuItemRequest  $request)
+    public function store(StoreMenuItemRequest $request)
     {
-         $data = $request->validated();
+        $data = $request->validated();
 
         // Make sure category belongs to tenant
         abort_unless(
-            MenuCategory::where('id', $data['category_id'])
+            Category::where('id', $data['category_id'])
             ->where('restaurant_id', Tenant::id())->exists(), 404
         );
 
@@ -218,14 +259,14 @@ class MenuItemController extends Controller
      *     )
      * )
      */
-    public function update(UpdateMenuItemRequest  $request,  MenuItem $item)
+    public function update(UpdateMenuItemRequest $request, MenuItem $item)
     {
-         abort_unless($item->restaurant_id === Tenant::id(), 404);
-        $data = $r->validated();
+        abort_unless($item->restaurant_id === Tenant::id(), 404);
+        $data = $request->validated();
 
         if (isset($data['category_id'])) {
             abort_unless(
-                MenuCategory::where('id', $data['category_id'])
+                Category::where('id', $data['category_id'])
                 ->where('restaurant_id', Tenant::id())->exists(), 404
             );
         }
@@ -266,7 +307,7 @@ class MenuItemController extends Controller
      */
     public function destroy(MenuItem $item)
     {
-         abort_unless($item->restaurant_id === Tenant::id(), 404);
+        abort_unless($item->restaurant_id === Tenant::id(), 404);
         $item->delete();
         return response()->noContent();
     }

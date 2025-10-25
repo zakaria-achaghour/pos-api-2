@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\MenuCategory;
+use App\Models\Category;
 use App\Models\MenuItem;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -69,15 +69,19 @@ class BaseSeeder extends Seeder
         ]);
 
         // 5. Menu categories
-        $drinks = MenuCategory::create([
+        $drinks = Category::create([
             'restaurant_id' => $restaurant->id,
             'name'          => 'Drinks',
             'description'   => 'Cold and hot beverages',
+            'is_active'     => true,
+            'sort_order'    => 1,
         ]);
-        $food = MenuCategory::create([
+        $food = Category::create([
             'restaurant_id' => $restaurant->id,
             'name'          => 'Food',
             'description'   => 'Main dishes',
+            'is_active'     => true,
+            'sort_order'    => 2,
         ]);
 
         // 6. Menu items
