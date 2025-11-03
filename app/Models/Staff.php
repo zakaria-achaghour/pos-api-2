@@ -14,6 +14,7 @@ class Staff extends Model
 
     protected $fillable = [
         'restaurant_id',
+        'user_id',
         'employee_id',
         'first_name',
         'last_name',
@@ -36,6 +37,11 @@ class Staff extends Model
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function attendances(): HasMany

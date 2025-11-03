@@ -16,13 +16,14 @@ class UpdateStaffRequest extends FormRequest
         $staffId = $this->route('staff')->id;
         
         return [
+            'user_id' => 'nullable|integer|exists:users,id',
             'first_name' => 'sometimes|string|max:100',
             'last_name' => 'sometimes|string|max:100',
             'phone' => 'nullable|string|max:20',
             'position' => 'sometimes|string|max:100',
             'hourly_rate' => 'nullable|numeric|min:0',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'status' => 'sometimes|in:active,inactive,terminated',
+            'status' => 'sometimes|in:active,inactive,vacation',
             'termination_date' => 'nullable|date',
         ];
     }

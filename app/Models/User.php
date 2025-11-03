@@ -23,6 +23,8 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
+        'restaurant_id',
+        'is_active',
     ];
 
     /**
@@ -45,10 +47,13 @@ class User extends Authenticatable implements JWTSubject
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
     public function restaurant() { return $this->belongsTo(Restaurant::class); }
+
+    public function staff() { return $this->hasOne(Staff::class); }
 
      // JWTSubject methods
     public function getJWTIdentifier()        { return $this->getKey(); }
