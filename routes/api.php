@@ -55,6 +55,9 @@ Route::middleware(['auth:api','tenant'])->group(function () {
         Route::get('occupancy-rates', [TableAnalyticsController::class, 'occupancyRates']);
         Route::get('revenue-per-table', [TableAnalyticsController::class, 'revenuePerTable']);
         Route::put('layout', [TableAnalyticsController::class, 'updateLayout']);
+        Route::match(['put', 'patch'], '{table}/status', [TableController::class, 'updateStatus']);
+        Route::post('{id}/restore', [TableController::class, 'restore']);
+        Route::delete('{id}/force', [TableController::class, 'forceDelete']);
         Route::get('{table}/analytics', [TableAnalyticsController::class, 'show']);
     });
 
@@ -99,6 +102,8 @@ Route::middleware(['auth:api','tenant'])->group(function () {
 
     // Staff Management
     Route::apiResource('staff', StaffController::class);
+    Route::post('staff/{id}/restore', [StaffController::class, 'restore']);
+    Route::delete('staff/{id}/force', [StaffController::class, 'forceDelete']);
     Route::get('staff/performance/summary', [StaffController::class, 'performance']);
     
     // Attendance Management

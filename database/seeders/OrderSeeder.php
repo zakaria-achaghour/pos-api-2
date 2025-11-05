@@ -27,7 +27,7 @@ class OrderSeeder extends Seeder
         $tables = Table::where('restaurant_id', $restaurant->id)->get();
         $menuItems = MenuItem::where('restaurant_id', $restaurant->id)->get();
         $waiters = Staff::where('restaurant_id', $restaurant->id)
-            ->where('position', 'Server')
+            ->where('department', 'Service')
             ->get();
 
         // Create orders for the last 30 days

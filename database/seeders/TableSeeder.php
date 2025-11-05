@@ -36,17 +36,60 @@ class TableSeeder extends Seeder
                 default => 8,      // Extra large tables
             };
 
+            $section = match(true) {
+                $i <= 5 => 'Main Dining',
+                $i <= 10 => 'Window Section',
+                $i <= 15 => 'Patio',
+                default => 'Private Dining',
+            };
+
+            $shape = match(true) {
+                $capacity == 2 => 'round',
+                $capacity == 4 => 'square',
+                $capacity == 6 => 'rectangular',
+                default => 'oval',
+            };
+
+            $floor = match(true) {
+                $i <= 10 => 1,
+                $i <= 18 => 2,
+                default => 3,
+            };
+
+            $features = [];
+            if ($section === 'Window Section') {
+                $features[] = 'Window View';
+            }
+            if ($section === 'Private Dining') {
+                $features[] = 'VIP Section';
+                $features[] = 'Private';
+            }
+            if ($section === 'Patio') {
+                $features[] = 'Outdoor Seating';
+            }
+            if ($capacity >= 6) {
+                $features[] = 'Large Group';
+            }
+
             Table::create([
                 'restaurant_id' => $restaurant->id,
                 'number' => sprintf('T%02d', $i),
                 'capacity' => $capacity,
                 'status' => 'available',
-                'section' => match(true) {
-                    $i <= 5 => 'Main Dining',
-                    $i <= 10 => 'Window Section',
-                    $i <= 15 => 'Patio',
-                    default => 'Private Dining',
-                },
+                'section' => $section,
+                'shape' => $shape,
+                'location' => [
+                    'section' => $section,
+                    'floor' => $floor,
+                    'area' => match($section) {
+                        'Main Dining' => 'Central',
+                        'Window Section' => 'East Wing',
+                        'Patio' => 'Garden',
+                        'Private Dining' => 'West Wing',
+                        default => 'General',
+                    }
+                ],
+                'features' => !empty($features) ? $features : null,
                 'grid_x' => ($i - 1) % 5,
                 'grid_y' => intval(($i - 1) / 5),
                 'qr_code' => 'QR-' . $restaurant->subdomain . '-T' . sprintf('%02d', $i),

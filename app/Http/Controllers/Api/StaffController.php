@@ -111,6 +111,13 @@ class StaffController extends Controller
         try {
             $query = Staff::with('user:id,name,email,restaurant_id')->where('restaurant_id', Tenant::id());
 
+            // Handle soft deletes
+            if ($request->boolean('only_deleted')) {
+                $query->onlyTrashed();
+            } elseif ($request->boolean('with_deleted')) {
+                $query->withTrashed();
+            }
+
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }
@@ -295,6 +302,77 @@ class StaffController extends Controller
         $staff->delete();
 
         return response()->json(['message' => 'Staff member deleted successfully']);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/staff/{id}/restore",
+     *     tags={"Staff Management"},
+     *     summary="Restore a soft-deleted staff member",
+     *     description="Restore a previously deleted staff member",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Staff ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Staff member restored successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Staff member not found"
+     *     )
+     * )
+     */
+    public function restore(int $id): JsonResponse
+    {
+        $staff = Staff::withTrashed()->findOrFail($id);
+        abort_unless($staff->restaurant_id === Tenant::id(), 404);
+        
+        $staff->restore();
+
+        return response()->json([
+            'message' => 'Staff member restored successfully',
+            'data' => $staff->load('user')
+        ]);
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/api/staff/{id}/force",
+     *     tags={"Staff Management"},
+     *     summary="Permanently delete a staff member",
+     *     description="Permanently delete a staff member from the database (cannot be undone)",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Staff ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Staff member permanently deleted"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Staff member not found"
+     *     )
+     * )
+     */
+    public function forceDelete(int $id): JsonResponse
+    {
+        $staff = Staff::withTrashed()->findOrFail($id);
+        abort_unless($staff->restaurant_id === Tenant::id(), 404);
+        
+        $staff->forceDelete();
+
+        return response()->json(['message' => 'Staff member permanently deleted']);
     }
 
     public function performance(Request $request): JsonResponse

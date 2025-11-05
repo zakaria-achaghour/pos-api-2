@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('emergency_contact_name')->nullable();
             $table->string('emergency_contact_phone')->nullable();
             $table->timestamps();
-            
+            $table->softDeletes();
             $table->index(['restaurant_id', 'status']);
             $table->index(['restaurant_id', 'position']);
         });

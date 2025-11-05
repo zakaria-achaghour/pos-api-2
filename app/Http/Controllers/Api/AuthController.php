@@ -138,6 +138,14 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+        // Check if user is soft-deleted before attempting login
+        $user = User::withTrashed()->where('email', $r->email)->first();
+        if ($user && $user->trashed()) {
+            return response()->json([
+                'message' => 'This account has been deleted. Please contact your administrator.'
+            ], 403);
+        }
+
         if (! $token = auth('api')->attempt($r->only('email','password'))) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }

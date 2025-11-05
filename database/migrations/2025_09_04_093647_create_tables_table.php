@@ -16,11 +16,14 @@ return new class extends Migration
             $table->integer('capacity');
             $table->enum('status', ['available', 'occupied', 'reserved', 'maintenance'])->default('available');
             $table->string('section')->nullable();
+            $table->json('location')->nullable();
+            // Add features as JSON array to store table features
+            $table->json('features')->nullable();
             $table->integer('grid_x')->nullable();
             $table->integer('grid_y')->nullable();
             $table->string('qr_code')->nullable();
             $table->timestamps();
-            
+            $table->softDeletes();
             // Indexes
             $table->unique(['restaurant_id', 'number']);
             $table->unique(['restaurant_id', 'qr_code']);
