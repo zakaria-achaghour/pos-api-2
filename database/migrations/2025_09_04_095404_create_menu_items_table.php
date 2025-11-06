@@ -17,9 +17,11 @@ return new class extends Migration
             $table->decimal('price', 8, 2);
             $table->decimal('cost', 8, 2)->nullable();
             $table->boolean('is_available')->default(true);
+            $table->boolean('is_active')->default(true);
             $table->integer('preparation_time')->default(15); // minutes
             $table->string('image_url')->nullable();
             $table->json('allergens')->nullable();
+            $table->json('ingredients')->nullable();
             $table->timestamps();
             
             $table->index(['restaurant_id', 'category_id']);

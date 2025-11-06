@@ -28,9 +28,12 @@ class StoreMenuItemRequest extends FormRequest
             'price'             => ['required','numeric','min:0.01'],
             'cost'              => ['nullable','numeric','min:0'],
             'is_available'      => ['nullable','boolean'],
+            'is_active'         => ['nullable','boolean'],
             'preparation_time'  => ['nullable','integer','min:0'],
             'image_url'         => ['nullable','string','url','max:500'],
-            'allergens'         => ['nullable','array']
+            'allergens'         => ['nullable','array'],
+            'ingredients'       => ['nullable','array'],
+            'ingredients.*'     => ['string','max:255']
         ];
     }
 }

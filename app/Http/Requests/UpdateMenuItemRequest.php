@@ -28,9 +28,12 @@ class UpdateMenuItemRequest extends FormRequest
             'price'             => ['sometimes','numeric','min:0.01'],
             'cost'              => ['nullable','numeric','min:0'],
             'is_available'      => ['sometimes','boolean'],
+            'is_active'         => ['sometimes','boolean'],
             'preparation_time'  => ['nullable','integer','min:0'],
             'image_url'         => ['nullable','string','url','max:500'],
-            'allergens'         => ['nullable','array']
+            'allergens'         => ['nullable','array'],
+            'ingredients'       => ['nullable','array'],
+            'ingredients.*'     => ['string','max:255']
         ];
     }
 }
