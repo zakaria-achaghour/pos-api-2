@@ -2637,12 +2637,27 @@
                         "schema": {
                             "type": "string",
                             "enum": [
-                                "open",
+                                "pending",
+                                "accepted",
                                 "preparing",
                                 "ready",
                                 "served",
-                                "paid",
+                                "completed",
                                 "cancelled"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Filter by order type",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "dine-in",
+                                "takeout",
+                                "delivery"
                             ]
                         }
                     },
@@ -3133,31 +3148,31 @@
                     "Staff Management"
                 ],
                 "summary": "List all staff members",
-                "description": "Retrieve paginated list of staff members for the authenticated restaurant",
+                "description": "Retrieve paginated list of staff members (employee records) for the authenticated restaurant. Each staff member can be linked to a user account for authentication.",
                 "operationId": "0982bcea347fde85ea4469d1029fe37f",
                 "parameters": [
                     {
                         "name": "status",
                         "in": "query",
-                        "description": "Filter by staff status",
+                        "description": "Filter by staff status (active: can login, inactive/vacation: cannot login)",
                         "required": false,
                         "schema": {
                             "type": "string",
                             "enum": [
                                 "active",
                                 "inactive",
-                                "terminated"
+                                "vacation"
                             ]
                         }
                     },
                     {
-                        "name": "position",
+                        "name": "role",
                         "in": "query",
-                        "description": "Filter by staff position",
+                        "description": "Filter by user role (Waiter, Kitchen, Cashier, Manager)",
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "example": "Manager"
+                            "example": "Waiter"
                         }
                     },
                     {
@@ -3168,6 +3183,16 @@
                         "schema": {
                             "type": "integer",
                             "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page (default: 15)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
                         }
                     }
                 ],
@@ -3193,6 +3218,12 @@
                                                     "restaurant_id": {
                                                         "type": "integer",
                                                         "example": 1
+                                                    },
+                                                    "user_id": {
+                                                        "description": "ID of the linked user account for authentication",
+                                                        "type": "integer",
+                                                        "example": 5,
+                                                        "nullable": true
                                                     },
                                                     "employee_id": {
                                                         "type": "string",
@@ -3243,6 +3274,25 @@
                                                     "emergency_contact_phone": {
                                                         "type": "string",
                                                         "example": "+1-555-0124"
+                                                    },
+                                                    "user": {
+                                                        "description": "Linked user account",
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 5
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "John Doe"
+                                                            },
+                                                            "email": {
+                                                                "type": "string",
+                                                                "example": "john.doe@example.com"
+                                                            }
+                                                        },
+                                                        "type": "object",
+                                                        "nullable": true
                                                     }
                                                 },
                                                 "type": "object"
@@ -3310,7 +3360,7 @@
                     "Staff Management"
                 ],
                 "summary": "Create a new staff member",
-                "description": "Add a new staff member to the restaurant",
+                "description": "Add a new staff member (employee record) to the restaurant. Optionally link to an existing user account via user_id for authentication.",
                 "operationId": "46dbdda4fa9f1daf0cf2df8476d7ea08",
                 "requestBody": {
                     "required": true,
@@ -3325,9 +3375,17 @@
                                     "department",
                                     "hourly_rate",
                                     "hire_date",
-                                    "status"
+                                    "status",
+                                    "password",
+                                    "role"
                                 ],
                                 "properties": {
+                                    "user_id": {
+                                        "description": "ID of existing user account to link this staff member to",
+                                        "type": "integer",
+                                        "example": 5,
+                                        "nullable": true
+                                    },
                                     "employee_id": {
                                         "type": "string",
                                         "example": "golden-fork-015"
@@ -3344,6 +3402,23 @@
                                         "type": "string",
                                         "format": "email",
                                         "example": "john.doe@example.com"
+                                    },
+                                    "password": {
+                                        "description": "Password for user login account",
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password123"
+                                    },
+                                    "role": {
+                                        "description": "User role for permissions",
+                                        "type": "string",
+                                        "enum": [
+                                            "Manager",
+                                            "Cashier",
+                                            "Waiter",
+                                            "Kitchen"
+                                        ],
+                                        "example": "Waiter"
                                     },
                                     "phone": {
                                         "type": "string",
@@ -3368,11 +3443,12 @@
                                         "example": "2024-12-01"
                                     },
                                     "status": {
+                                        "description": "Staff status - only 'active' staff can login",
                                         "type": "string",
                                         "enum": [
                                             "active",
                                             "inactive",
-                                            "terminated"
+                                            "vacation"
                                         ],
                                         "example": "active"
                                     },
@@ -3519,6 +3595,74 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/staff/{id}/restore": {
+            "post": {
+                "tags": [
+                    "Staff Management"
+                ],
+                "summary": "Restore a soft-deleted staff member",
+                "description": "Restore a previously deleted staff member",
+                "operationId": "6118cfc5859c8a51be26cf9222f4a234",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Staff ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Staff member restored successfully"
+                    },
+                    "404": {
+                        "description": "Staff member not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/staff/{id}/force": {
+            "delete": {
+                "tags": [
+                    "Staff Management"
+                ],
+                "summary": "Permanently delete a staff member",
+                "description": "Permanently delete a staff member from the database (cannot be undone)",
+                "operationId": "2a5786bc8347cbc7e6d091f6ad2fe286",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Staff ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Staff member permanently deleted"
+                    },
+                    "404": {
+                        "description": "Staff member not found"
                     }
                 },
                 "security": [
@@ -3959,7 +4103,8 @@
                                 "available",
                                 "occupied",
                                 "reserved",
-                                "maintenance"
+                                "maintenance",
+                                "out-of-order"
                             ]
                         }
                     },
@@ -3975,7 +4120,27 @@
                     {
                         "name": "capacity",
                         "in": "query",
-                        "description": "Filter by table capacity",
+                        "description": "Filter by exact table capacity",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "min_capacity",
+                        "in": "query",
+                        "description": "Filter by minimum table capacity",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "max_capacity",
+                        "in": "query",
+                        "description": "Filter by maximum table capacity",
                         "required": false,
                         "schema": {
                             "type": "integer",
@@ -4314,6 +4479,248 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/tables/{id}/restore": {
+            "post": {
+                "tags": [
+                    "Tables"
+                ],
+                "summary": "Restore a soft-deleted table",
+                "description": "Restore a previously deleted table",
+                "operationId": "29bd662e02026ced2e622fdb6b996f29",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Table ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Table restored successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Table restored successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Table"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Table not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/tables/{id}/force": {
+            "delete": {
+                "tags": [
+                    "Tables"
+                ],
+                "summary": "Permanently delete a table",
+                "description": "Permanently delete a table from the database (cannot be undone)",
+                "operationId": "b948578e0eb20e00bb7579af1dffab57",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Table ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Table permanently deleted"
+                    },
+                    "404": {
+                        "description": "Table not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/tables/{table}/status": {
+            "put": {
+                "tags": [
+                    "Tables"
+                ],
+                "summary": "Update table status",
+                "description": "Update the status of a specific table",
+                "operationId": "0071ac498ff18831bc0de7ee8bb0e02b",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "path",
+                        "description": "Table ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "description": "New status for the table",
+                                        "type": "string",
+                                        "enum": [
+                                            "available",
+                                            "occupied",
+                                            "reserved",
+                                            "maintenance",
+                                            "out-of-order"
+                                        ],
+                                        "example": "occupied"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Table status updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Table status updated successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Table"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Table not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Tables"
+                ],
+                "summary": "Update table status",
+                "description": "Update the status of a specific table",
+                "operationId": "ddce8e13bf5f8868a033c57d65b82ec9",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "path",
+                        "description": "Table ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "description": "New status for the table",
+                                        "type": "string",
+                                        "enum": [
+                                            "available",
+                                            "occupied",
+                                            "reserved",
+                                            "maintenance",
+                                            "out-of-order"
+                                        ],
+                                        "example": "occupied"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Table status updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Table status updated successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Table"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Table not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
                     }
                 },
                 "security": [

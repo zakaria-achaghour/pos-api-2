@@ -70,10 +70,13 @@ Route::middleware(['auth:api','tenant'])->group(function () {
     Route::get('orders', [OrderController::class,'index']);
     Route::post('orders', [OrderController::class,'store']);
     Route::get('orders/{order}', [OrderController::class,'show']);
+    Route::put('orders/{order}', [OrderController::class,'update']);
     Route::post('orders/{order}/items', [OrderController::class,'addItem']);
     Route::put('orders/{order}/items/{orderItem}', [OrderController::class,'updateItem']);
     Route::delete('orders/{order}/items/{orderItem}', [OrderController::class,'removeItem']);
     Route::post('orders/{order}/close', [OrderController::class,'close']);
+    Route::patch('orders/{order}/payment', [OrderController::class,'updatePayment']);
+    Route::patch('orders/{order}/status', [OrderController::class,'updateStatus']);
 
     // Kitchen Management
     Route::prefix('kitchen')->group(function () {

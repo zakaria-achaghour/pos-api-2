@@ -15,6 +15,8 @@ return new class extends Migration
             $table->integer('quantity');
             $table->decimal('unit_price', 8, 2);
             $table->text('special_instructions')->nullable();
+            $table->json('removed_ingredients')->nullable();
+            $table->json('added_extras')->nullable();
             $table->timestamps();
             
             $table->index(['order_id']);

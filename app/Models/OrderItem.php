@@ -17,10 +17,14 @@ class OrderItem extends Model
         'quantity',
         'unit_price',
         'special_instructions',
+        'removed_ingredients',
+        'added_extras',
     ];
 
     protected $casts = [
         'unit_price' => 'decimal:2',
+        'removed_ingredients' => 'array',
+        'added_extras' => 'array',
     ];
 
     public function order(): BelongsTo
