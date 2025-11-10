@@ -21,6 +21,7 @@ class KitchenTicket extends Model
         'cooking_station',
         'started_at',
         'completed_at',
+        'bumped_at',
         'preparation_time',
         'special_instructions',
     ];
@@ -28,6 +29,7 @@ class KitchenTicket extends Model
     protected $casts = [
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'bumped_at' => 'datetime',
     ];
 
     public function restaurant(): BelongsTo
@@ -59,7 +61,15 @@ class KitchenTicket extends Model
             'status' => 'ready',
             'completed_at' => now(),
             'preparation_time' => $this->started_at ? 
-                $this->started_at->diffInMinutes(now()) : null,
+                (int) $this->started_at->diffInMinutes(now()) : null,
+        ]);
+    }
+
+    public function markAsServed(): void
+    {
+        $this->update([
+            'status' => 'served',
+            'bumped_at' => now(),
         ]);
     }
 }

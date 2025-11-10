@@ -23,4 +23,43 @@ class Order extends Model
     public function orderItems(){ return $this->hasMany(OrderItem::class); }
     public function payments()  { return $this->hasMany(Payment::class); }
     public function kitchenTicket(){ return $this->hasOne(KitchenTicket::class); }
+    
+    /**
+     * Update order status based on order items state
+     */
+    public function updateStatusFromItems(): void
+    {
+        $items = $this->orderItems;
+        
+        if ($items->isEmpty()) {
+            return;
+        }
+        
+        $allStates = $items->pluck('state')->unique();
+        
+        // If all items are ready, set order to ready
+        if ($allStates->count() === 1 && $allStates->first() === 'ready') {
+            if (!in_array($this->status, ['ready', 'served', 'completed', 'cancelled'])) {
+                $this->update(['status' => 'ready']);
+            }
+        }
+        // If all items are preparing, set order to preparing
+        elseif ($allStates->count() === 1 && $allStates->first() === 'preparing') {
+            if (!in_array($this->status, ['preparing', 'ready', 'served', 'completed', 'cancelled'])) {
+                $this->update(['status' => 'preparing']);
+            }
+        }
+        // If all items are served, set order to served
+        elseif ($allStates->count() === 1 && $allStates->first() === 'served') {
+            if (!in_array($this->status, ['served', 'completed', 'cancelled'])) {
+                $this->update(['status' => 'served']);
+            }
+        }
+        // If items are in mixed states (some preparing, some ready), set to preparing
+        elseif ($allStates->contains('preparing') || $allStates->contains('ready')) {
+            if (!in_array($this->status, ['preparing', 'ready', 'served', 'completed', 'cancelled'])) {
+                $this->update(['status' => 'preparing']);
+            }
+        }
+    }
 }

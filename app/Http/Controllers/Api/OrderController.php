@@ -610,7 +610,7 @@ class OrderController extends Controller
      *     path="/api/orders/{order}/status",
      *     tags={"Orders"},
      *     summary="Update order status",
-     *     description="Update the status of an order (e.g., from pending to accepted, preparing, ready, served, completed, or cancelled)",
+     *     description="Update the status of an order. When status changes to 'accepted', a kitchen ticket is automatically created for the order if it doesn't already have one.",
      *     security={{"bearer_token": {}}},
      *     @OA\Parameter(
      *         name="order",
@@ -628,13 +628,13 @@ class OrderController extends Controller
      *                 type="string",
      *                 enum={"pending", "accepted", "preparing", "ready", "served", "completed", "cancelled"},
      *                 example="accepted",
-     *                 description="New status for the order"
+     *                 description="New status for the order. Setting status to 'accepted' automatically creates a kitchen ticket."
      *             )
      *         )
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Order status updated successfully",
+     *         description="Order status updated successfully. If status was changed to 'accepted', a kitchen ticket has been created automatically.",
      *         @OA\JsonContent(
      *             @OA\Property(property="message", type="string", example="Order status updated successfully"),
      *             @OA\Property(property="order", ref="#/components/schemas/Order")
@@ -672,6 +672,24 @@ class OrderController extends Controller
         $order->update([
             'status' => $newStatus,
         ]);
+
+        // If order is accepted, create a kitchen ticket
+        if ($newStatus === 'accepted' && !$order->kitchenTicket) {
+            $lastTicket = \App\Models\KitchenTicket::where('restaurant_id', Tenant::id())
+                ->latest('ticket_number')
+                ->first();
+            
+            $nextTicketNumber = $lastTicket ? $lastTicket->ticket_number + 1 : 1;
+            
+            \App\Models\KitchenTicket::create([
+                'restaurant_id' => Tenant::id(),
+                'order_id' => $order->id,
+                'ticket_number' => $nextTicketNumber,
+                'priority' => $order->priority ?? 'normal',
+                'status' => 'pending',
+                'special_instructions' => $order->notes,
+            ]);
+        }
 
         // If order is completed, mark it as paid if not already
         if ($newStatus === 'completed' && !$order->paid_at) {

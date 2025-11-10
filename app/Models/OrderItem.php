@@ -16,6 +16,7 @@ class OrderItem extends Model
         'menu_item_id',
         'quantity',
         'unit_price',
+        'state',
         'special_instructions',
         'removed_ingredients',
         'added_extras',

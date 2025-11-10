@@ -85,6 +85,7 @@ Route::middleware(['auth:api','tenant'])->group(function () {
         Route::post('tickets/{kitchenTicket}/assign', [KitchenController::class, 'assign']);
         Route::post('tickets/{kitchenTicket}/start', [KitchenController::class, 'start']);
         Route::post('tickets/{kitchenTicket}/complete', [KitchenController::class, 'complete']);
+        Route::post('tickets/{kitchenTicket}/serve', [KitchenController::class, 'serve']);
         Route::put('tickets/{kitchenTicket}/priority', [KitchenController::class, 'updatePriority']);
         Route::get('analytics', [KitchenController::class, 'analytics']);
     });
