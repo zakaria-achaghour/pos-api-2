@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminTenantController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\MenuItemController;
@@ -41,6 +43,11 @@ Route::prefix('admin')
     Route::get('restaurants/{restaurant}/orders', [AdminTenantController::class, 'orders']);
     Route::get('restaurants/{restaurant}/reports/summary', [AdminTenantController::class, 'dailySummary']);
     
+    // Role & Permission Management
+    Route::apiResource('roles', RoleController::class)->except(['create', 'edit']);
+    Route::get('roles/{role}/users', [RoleController::class, 'users']);
+    Route::apiResource('permissions', PermissionController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    
     // Optional: impersonation (returns JWT for that user; lock this down!)
     Route::post('impersonate/{user}', [AdminTenantController::class, 'impersonate']);
 });
@@ -48,6 +55,10 @@ Route::prefix('admin')
 // ---------- PROTECTED ----------
 Route::middleware(['auth:api','tenant'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
+
+    // Roles - For staff creation/filtering (accessible by Owner, Manager)
+    Route::get('roles', [\App\Http\Controllers\Api\RoleController::class, 'index']);
+    Route::get('roles/assignable', [\App\Http\Controllers\Api\RoleController::class, 'assignable']);
 
     // Table Analytics (must come before table resource routes)
     Route::prefix('tables')->group(function () {

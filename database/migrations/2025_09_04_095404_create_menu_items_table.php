@@ -22,6 +22,8 @@ return new class extends Migration
             $table->string('image_url')->nullable();
             $table->json('allergens')->nullable();
             $table->json('ingredients')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
             
             $table->index(['restaurant_id', 'category_id']);

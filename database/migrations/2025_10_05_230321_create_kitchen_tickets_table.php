@@ -25,6 +25,9 @@ return new class extends Migration
             $table->timestamp('bumped_at')->nullable(); // when passed to expediter/server
             $table->integer('preparation_time')->nullable(); // in minutes
             $table->text('special_instructions')->nullable();
+            $table->text('notes')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
             
             $table->unique(['restaurant_id', 'ticket_number']);

@@ -3,6 +3,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasUserTracking;
 use App\Models\Traits\SetsRestaurant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MenuItem extends Model
 {
-    use HasFactory, SetsRestaurant;
+    use HasFactory, SetsRestaurant, HasUserTracking;
 
     protected $fillable = [
         'restaurant_id',
@@ -25,6 +26,8 @@ class MenuItem extends Model
         'image_url',
         'allergens',
         'ingredients',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [

@@ -7,6 +7,7 @@ use Illuminate\Database\Seeder;
 use App\Models\Staff;
 use App\Models\Restaurant;
 use App\Models\User;
+use Spatie\Permission\Models\Role;
 
 class StaffSeeder extends Seeder
 {
@@ -21,10 +22,16 @@ class StaffSeeder extends Seeder
 
     private function createStaffForRestaurant(Restaurant $restaurant): void
     {
-        // Get users for this restaurant EXCLUDING Owners (they're not staff)
+        // Get assignable roles (exclude Owner and SuperAdmin)
+        $assignableRoles = Role::where('guard_name', 'api')
+            ->whereNotIn('name', ['Owner', 'SuperAdmin'])
+            ->pluck('name')
+            ->toArray();
+
+        // Get users for this restaurant with assignable roles
         $users = User::where('restaurant_id', $restaurant->id)
-            ->whereHas('roles', function($query) {
-                $query->whereIn('name', ['Manager', 'Cashier', 'Waiter', 'Kitchen']);
+            ->whereHas('roles', function($query) use ($assignableRoles) {
+                $query->whereIn('name', $assignableRoles);
             })
             ->get();
 

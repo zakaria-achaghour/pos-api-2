@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasUserTracking;
 use App\Models\Traits\SetsRestaurant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,7 +10,7 @@ use Illuminate\Support\Str;
 
 class Table extends Model
 {
-    use SetsRestaurant, SoftDeletes;
+    use SetsRestaurant, SoftDeletes, HasUserTracking;
 
     protected $fillable = [
         'restaurant_id', 
@@ -22,7 +23,9 @@ class Table extends Model
         'grid_y', 
         'qr_code',
         'location',
-        'features'
+        'features',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [

@@ -15,6 +15,8 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->integer('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
             $table->softDeletes();
             $table->index(['restaurant_id', 'sort_order']);

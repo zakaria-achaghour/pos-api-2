@@ -3,6 +3,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasUserTracking;
 use App\Models\Traits\SetsRestaurant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,7 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Category extends Model
 {
-    use HasFactory, SetsRestaurant, SoftDeletes;
+    use HasFactory, SetsRestaurant, SoftDeletes, HasUserTracking;
 
     protected $fillable = [
         'restaurant_id',
@@ -37,6 +38,8 @@ class Category extends Model
         'description',
         'sort_order',
         'is_active',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [

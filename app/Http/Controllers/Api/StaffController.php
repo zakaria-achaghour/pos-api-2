@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Infrastructure\Tenancy\Tenant;
+use Spatie\Permission\Models\Role;
 
 class StaffController extends Controller
 {
@@ -82,6 +83,15 @@ class StaffController extends Controller
      *                         @OA\Property(property="id", type="integer", example=5),
      *                         @OA\Property(property="name", type="string", example="John Doe"),
      *                         @OA\Property(property="email", type="string", example="john.doe@example.com")
+     *                     ),
+     *                     @OA\Property(property="active_attendance", type="array", description="Current active attendance record (clock-in without clock-out)",
+     *                         @OA\Items(
+     *                             @OA\Property(property="id", type="integer", example=42),
+     *                             @OA\Property(property="staff_id", type="integer", example=1),
+     *                             @OA\Property(property="restaurant_id", type="integer", example=1),
+     *                             @OA\Property(property="clock_in", type="string", format="datetime", example="2025-11-11T08:30:00.000000Z"),
+     *                             @OA\Property(property="clock_out", type="string", nullable=true, example=null)
+     *                         )
      *                     )
      *                 )
      *             ),
@@ -109,7 +119,10 @@ class StaffController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Staff::with('user:id,name,email,restaurant_id')->where('restaurant_id', Tenant::id());
+            $query = Staff::with([
+                'user:id,name,email,restaurant_id',
+                'activeAttendance:id,staff_id,restaurant_id,clock_in,clock_out'
+            ])->where('restaurant_id', Tenant::id());
 
             // Handle soft deletes
             if ($request->boolean('only_deleted')) {
@@ -225,6 +238,18 @@ class StaffController extends Controller
 
             $data = $request->validated();
             
+            // Resolve role dynamically
+            $role = Role::where('guard_name', 'api')
+                ->where('name', $data['role'])
+                ->first();
+
+            if (!$role) {
+                return response()->json([
+                    'message' => 'Invalid role specified',
+                    'error' => "Role '{$data['role']}' not found"
+                ], 422);
+            }
+            
             // Create user account first
             $user = User::create([
                 'name' => $data['first_name'] . ' ' . $data['last_name'],
@@ -235,18 +260,20 @@ class StaffController extends Controller
                 'is_active' => ($data['status'] ?? 'active') === 'active', // Only active staff can login
             ]);
 
-            // Assign role to user (exclude Owner role for staff)
-            $allowedRoles = ['Manager', 'Cashier', 'Waiter', 'Kitchen'];
-            if (in_array($data['role'], $allowedRoles)) {
-                $user->assignRole($data['role']);
+            // Assign role to user
+            $user->assignRole($role);
+
+            // Optionally sync custom permissions if provided
+            if (!empty($data['permissions'])) {
+                $user->syncPermissions($data['permissions']);
             }
 
             // Create staff record linked to user
             $data['restaurant_id'] = Tenant::id();
             $data['user_id'] = $user->id;
             
-            // Remove password and role from staff data
-            unset($data['password'], $data['role']);
+            // Remove password, role, and permissions from staff data
+            unset($data['password'], $data['role'], $data['permissions']);
 
             $staff = Staff::create($data);
             $staff->load(['user', 'attendances']);
@@ -269,7 +296,11 @@ class StaffController extends Controller
         
         abort_unless($staff->restaurant_id === Tenant::id(), 404);
         
-        $staff->load(['user', 'attendances']);
+        $staff->load([
+            'user',
+            'attendances',
+            'activeAttendance:id,staff_id,restaurant_id,clock_in,clock_out'
+        ]);
 
         return response()->json($staff);
     }

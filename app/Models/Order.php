@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasUserTracking;
 use App\Models\Traits\SetsRestaurant;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
-    use SetsRestaurant;
+    use SetsRestaurant, HasUserTracking;
 
     protected $fillable = [
-        'restaurant_id','table_id','waiter_id','user_id','order_number','type','status','priority','subtotal','tax_amount','discount_amount','total','payment_method','notes','placed_at','paid_at'
+        'restaurant_id','table_id','waiter_id','user_id','order_number','type','status','priority','subtotal','tax_amount','discount_amount','total','payment_method','notes','placed_at','paid_at','created_by','updated_by'
     ];
     protected $casts = [
         'placed_at' => 'datetime',

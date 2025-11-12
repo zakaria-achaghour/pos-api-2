@@ -23,6 +23,8 @@ return new class extends Migration
             $table->decimal('total', 10, 2)->default(0);
             $table->enum('payment_method', ['cash', 'card', 'mobile', 'split'])->nullable();
             $table->text('notes')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('placed_at')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();

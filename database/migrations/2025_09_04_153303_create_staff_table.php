@@ -24,6 +24,8 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive', 'vacation'])->default('active');
             $table->string('emergency_contact_name')->nullable();
             $table->string('emergency_contact_phone')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
             $table->softDeletes();
             $table->index(['restaurant_id', 'status']);

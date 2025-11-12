@@ -146,7 +146,7 @@ class CategoryController extends Controller
      */
     public function show(Category $category)
     {
-        return response()->json($category->load('menuItems'));
+        return response()->json($category->load(['menuItems', 'creator:id,name,email', 'updater:id,name,email']));
     }
 
     /**

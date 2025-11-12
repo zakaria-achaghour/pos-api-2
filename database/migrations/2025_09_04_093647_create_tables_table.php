@@ -22,6 +22,8 @@ return new class extends Migration
             $table->integer('grid_x')->nullable();
             $table->integer('grid_y')->nullable();
             $table->string('qr_code')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
             $table->softDeletes();
             // Indexes

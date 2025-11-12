@@ -3,6 +3,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Staff extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasUserTracking;
 
     protected $fillable = [
         'restaurant_id',
@@ -28,6 +29,8 @@ class Staff extends Model
         'status',
         'emergency_contact_name',
         'emergency_contact_phone',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
@@ -48,6 +51,11 @@ class Staff extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function activeAttendance(): HasMany
+    {
+        return $this->hasMany(Attendance::class)->whereNull('clock_out')->latest('clock_in');
     }
 
     public function schedules(): HasMany

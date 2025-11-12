@@ -11,7 +11,7 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create permissions
+        // Create permissions with guard_name
         $permissions = [
             // Menu management
             'manage-menu',
@@ -48,10 +48,18 @@ class RoleSeeder extends Seeder
             // Super admin permissions
             'manage-all-restaurants',
             'impersonate-users',
+            
+            // Role and permission management
+            'view-roles',
+            'manage-roles',
+            'view-permissions',
+            'manage-permissions',
         ];
 
         foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
+            Permission::firstOrCreate(
+                ['name' => $permission, 'guard_name' => 'api']
+            );
         }
 
         // Create roles with permissions
@@ -77,6 +85,10 @@ class RoleSeeder extends Seeder
                 'view-analytics',
                 'manage-restaurant',
                 'view-restaurant-settings',
+                'view-roles',
+                'manage-roles',
+                'view-permissions',
+                'manage-permissions',
             ],
             
             'Owner' => [
@@ -98,6 +110,7 @@ class RoleSeeder extends Seeder
                 'view-analytics',
                 'manage-restaurant',
                 'view-restaurant-settings',
+                'view-roles', // Need to view roles for staff management
             ],
             
             'Manager' => [
@@ -116,6 +129,7 @@ class RoleSeeder extends Seeder
                 'view-reports',
                 'export-reports',
                 'view-analytics',
+                'view-roles', // Need to view roles for staff management
             ],
             
             'Cashier' => [
@@ -142,9 +156,11 @@ class RoleSeeder extends Seeder
             ],
         ];
 
-        foreach ($roles as $roleName => $permissions) {
-            $role = Role::firstOrCreate(['name' => $roleName]);
-            $role->syncPermissions($permissions);
+        foreach ($roles as $roleName => $rolePermissions) {
+            $role = Role::firstOrCreate(
+                ['name' => $roleName, 'guard_name' => 'api']
+            );
+            $role->syncPermissions($rolePermissions);
         }
     }
 }

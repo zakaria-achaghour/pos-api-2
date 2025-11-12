@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Restaurant extends Model
 {
-     use HasFactory;
+    use HasFactory, HasUserTracking;
 
     protected $fillable = [
         'name',
-        'slug', 
+        'subdomain',
         'address',
         'city',
         'postal_code',
@@ -19,18 +21,27 @@ class Restaurant extends Model
         'phone',
         'email',
         'website',
+        'license_number',
+        'tax_number',
         'cuisine_type',
+        'timezone',
         'currency',
-        'timezone', 
         'tax_rate',
         'service_charge',
+        'service_charge_rate',
+        'opening_time',
+        'closing_time',
+        'logo_url',
+        'description',
         'status',
         'subscription_type',
         'subscription_start',
         'subscription_end',
-        'subdomain',
         'is_active',
-        'settings'
+        'settings',
+        'payment_settings',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [

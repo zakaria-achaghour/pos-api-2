@@ -116,38 +116,89 @@ class AdminTenantController extends Controller
     public function createRestaurant(Request $r) {
         $data = $r->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'subdomain' => 'nullable|string|max:255|unique:restaurants,subdomain',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
             'country' => 'nullable|string|max:100',
-            'currency' => 'nullable|string|size:3',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'website' => 'nullable|url|max:255',
+            'license_number' => 'nullable|string|max:100',
+            'tax_number' => 'nullable|string|max:100',
+            'cuisine_type' => 'nullable|string|max:100',
+            'currency' => 'nullable|string|size:3|in:USD,EUR,GBP,MAD,CAD,AUD',
             'timezone' => 'nullable|string|max:50',
+            'tax_rate' => 'nullable|numeric|between:0,100',
+            'service_charge' => 'nullable|numeric|between:0,100',
             'status' => 'nullable|in:active,inactive,suspended',
-            'owner_name' => 'required|string|max:255',
-            'owner_email' => 'required|email',
             'subscription_type' => 'nullable|in:basic,premium,enterprise',
+            'subscription_plan' => 'nullable|in:basic,premium,enterprise', // alias for subscription_type
+            'subscription_start' => 'nullable|date',
+            'subscription_end' => 'nullable|date|after:subscription_start',
+            'owner_name' => 'required|string|max:255',
+            'owner_email' => 'required|email|unique:users,email',
+            'owner_phone' => 'nullable|string|max:20',
+            'owner_password' => 'nullable|string|min:6',
         ]);
 
+        DB::beginTransaction();
         try {
-            // Create restaurant with default values
+            // Create restaurant with all provided fields
             $restaurant = Restaurant::create([
                 'name' => $data['name'],
-                'slug' => $data['slug'] ?: \Str::slug($data['name']),
+                'subdomain' => $data['subdomain'] ?? \Str::slug($data['name']),
                 'address' => $data['address'] ?? '',
                 'city' => $data['city'] ?? '',
+                'postal_code' => $data['postal_code'] ?? null,
                 'country' => $data['country'] ?? 'USA',
+                'phone' => $data['phone'] ?? null,
+                'email' => $data['email'] ?? null,
+                'website' => $data['website'] ?? null,
+                'cuisine_type' => $data['cuisine_type'] ?? null,
                 'currency' => $data['currency'] ?? 'USD',
                 'timezone' => $data['timezone'] ?? 'UTC',
+                'tax_rate' => $data['tax_rate'] ?? 0,
+                'service_charge' => $data['service_charge'] ?? 0,
                 'status' => $data['status'] ?? 'active',
+                'subscription_type' => $data['subscription_type'] ?? $data['subscription_plan'] ?? 'basic',
+                'subscription_start' => $data['subscription_start'] ?? now(),
+                'subscription_end' => $data['subscription_end'] ?? null,
+                'is_active' => true,
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
+            ]);
+
+            // Create owner user
+            $owner = User::create([
+                'name' => $data['owner_name'],
+                'email' => $data['owner_email'],
+                'phone' => $data['owner_phone'] ?? null,
+                'password' => Hash::make($data['owner_password'] ?? 'password123'),
+                'restaurant_id' => $restaurant->id,
                 'is_active' => true,
             ]);
+
+            // Assign Owner role
+            $ownerRole = \Spatie\Permission\Models\Role::where('name', 'Owner')
+                ->where('guard_name', 'api')
+                ->first();
+            
+            if ($ownerRole) {
+                $owner->assignRole($ownerRole);
+            }
+
+            DB::commit();
             
             return response()->json([
-                'message' => 'Restaurant created successfully',
-                'restaurant' => $restaurant,
+                'message' => 'Restaurant and owner created successfully',
+                'restaurant' => $restaurant->fresh(),
+                'owner' => $owner->fresh(['roles']),
             ], 201);
             
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'message' => 'Failed to create restaurant',
                 'error' => $e->getMessage()
@@ -166,7 +217,7 @@ class AdminTenantController extends Controller
     public function updateRestaurant(Request $r, Restaurant $restaurant) {
         $data = $r->validate([
             'name' => 'sometimes|string|max:255',
-            'slug' => 'sometimes|string|max:255|unique:restaurants,slug,' . $restaurant->id,
+            'subdomain' => 'sometimes|string|max:255|unique:restaurants,subdomain,' . $restaurant->id,
             'address' => 'sometimes|string',
             'city' => 'sometimes|string|max:100',
             'postal_code' => 'nullable|string|max:20',

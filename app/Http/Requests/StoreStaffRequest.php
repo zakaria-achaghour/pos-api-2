@@ -3,12 +3,13 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreStaffRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->hasAnyRole(['SuperAdmin', 'Owner', 'Manager']);
     }
 
     public function rules(): array
@@ -20,7 +21,18 @@ class StoreStaffRequest extends FormRequest
             'last_name' => 'required|string|max:100',
             'email' => 'required|email|max:255|unique:users,email|unique:staff,email',
             'password' => 'required|string|min:8',
-            'role' => 'required|string|in:Manager,Cashier,Waiter,Kitchen',
+            'role' => [
+                'required',
+                'string',
+                Rule::exists('roles', 'name')
+                    ->where(fn($q) => $q->where('guard_name', 'api')
+                        ->whereNotIn('name', ['Owner', 'SuperAdmin']))
+            ],
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => [
+                Rule::exists('permissions', 'name')
+                    ->where(fn($q) => $q->where('guard_name', 'api'))
+            ],
             'phone' => 'nullable|string|max:20',
             'position' => 'required|string|max:100',
             'department' => 'required|string|max:100',
