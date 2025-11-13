@@ -4,13 +4,19 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
+use App\Models\User;
 
 class RoleSeeder extends Seeder
 {
     public function run(): void
     {
+        // Ensure we always work with fresh permission cache when seeding
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         // Create permissions with guard_name
         $permissions = [
             // Menu management
@@ -161,6 +167,35 @@ class RoleSeeder extends Seeder
                 ['name' => $roleName, 'guard_name' => 'api']
             );
             $role->syncPermissions($rolePermissions);
+        }
+
+        $this->ensureSuperAdminUserExists();
+    }
+
+    /**
+     * Make sure there is at least one active SuperAdmin account that can log in.
+     */
+    private function ensureSuperAdminUserExists(): void
+    {
+        $email = config('app.super_admin_email', 'superadmin@pos.com');
+        $password = config('app.super_admin_password', 'password123');
+
+        $user = User::firstOrNew(['email' => $email]);
+
+        if (! $user->exists) {
+            $user->fill([
+                'name' => 'Super Admin',
+                'restaurant_id' => null,
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]);
+
+            $user->password = Hash::make($password);
+            $user->save();
+        }
+
+        if (! $user->hasRole('SuperAdmin')) {
+            $user->assignRole('SuperAdmin');
         }
     }
 }

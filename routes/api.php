@@ -24,7 +24,7 @@ Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:ap
 Route::prefix('admin')
   ->middleware(['auth:api','role:SuperAdmin'])
   ->group(function () {
-    // Restaurant CRUD operations
+    // Restaurant CRUD operations (SuperAdmin only)
     Route::get('restaurants', [AdminTenantController::class, 'listRestaurants']);
     Route::post('restaurants', [AdminTenantController::class, 'createRestaurant']);
     Route::get('restaurants/{restaurant}', [AdminTenantController::class, 'showRestaurant']);
@@ -32,7 +32,7 @@ Route::prefix('admin')
     Route::delete('restaurants/{restaurant}', [AdminTenantController::class, 'deleteRestaurant']);
     Route::get('restaurants/{restaurant}/stats', [AdminTenantController::class, 'getRestaurantStats']);
     
-    // Restaurant-specific views
+    // Restaurant-specific views (SuperAdmin only)
     Route::get('restaurants/{restaurant}/overview', [AdminTenantController::class, 'overview']);
     Route::get('restaurants/{restaurant}/tables', [AdminTenantController::class, 'tables']);
     Route::get('restaurants/{restaurant}/menu/categories', [AdminTenantController::class, 'categories']);
@@ -40,13 +40,26 @@ Route::prefix('admin')
     Route::get('restaurants/{restaurant}/orders', [AdminTenantController::class, 'orders']);
     Route::get('restaurants/{restaurant}/reports/summary', [AdminTenantController::class, 'dailySummary']);
     
-    // Role & Permission Management
-    Route::apiResource('roles', RoleController::class)->except(['create', 'edit']);
-    Route::get('roles/{role}/users', [RoleController::class, 'users']);
+    // Role Management (CRUD - SuperAdmin only)
+    Route::post('roles', [RoleController::class, 'store']);
+    Route::put('roles/{role}', [RoleController::class, 'update']);
+    Route::patch('roles/{role}', [RoleController::class, 'update']);
+    Route::delete('roles/{role}', [RoleController::class, 'destroy']);
+    
+    // Permission Management (SuperAdmin only)
     Route::apiResource('permissions', PermissionController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     
     // Optional: impersonation (returns JWT for that user; lock this down!)
     Route::post('impersonate/{user}', [AdminTenantController::class, 'impersonate']);
+});
+
+// Role Viewing - Accessible by SuperAdmin and Owner (read-only for Owner)
+Route::prefix('admin')
+  ->middleware(['auth:api', 'role:SuperAdmin|Owner'])
+  ->group(function () {
+    Route::get('roles', [RoleController::class, 'index']);
+    Route::get('roles/{role}', [RoleController::class, 'show']);
+    Route::get('roles/{role}/users', [RoleController::class, 'users']);
 });
 
 // ---------- PROTECTED ----------

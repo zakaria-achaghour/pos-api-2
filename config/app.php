@@ -123,4 +123,18 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Default Super Admin Credentials
+    |--------------------------------------------------------------------------
+    |
+    | Used by the RoleSeeder to ensure at least one Super Admin account exists.
+    | Override these via APP_SUPER_ADMIN_EMAIL / APP_SUPER_ADMIN_PASSWORD in
+    | your environment configuration before running the database seeders.
+    |
+    */
+
+    'super_admin_email' => env('APP_SUPER_ADMIN_EMAIL', 'superadmin@pos.com'),
+    'super_admin_password' => env('APP_SUPER_ADMIN_PASSWORD', 'password123'),
+
 ];
