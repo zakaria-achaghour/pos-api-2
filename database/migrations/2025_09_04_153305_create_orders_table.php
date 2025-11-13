@@ -14,7 +14,8 @@ return new class extends Migration
             $table->foreignId('restaurant_id')->constrained()->onDelete('cascade');
             $table->foreignId('table_id')->constrained()->onDelete('cascade');
             $table->foreignId('waiter_id')->nullable()->constrained('staff')->onDelete('set null');
-            $table->enum('status', ['open', 'paid', 'cancelled', 'refunded'])->default('open');
+            $table->enum('type', ['dine-in', 'takeout', 'delivery'])->default('dine-in');
+            $table->enum('status', ['pending', 'accepted', 'preparing', 'ready', 'served', 'completed', 'cancelled'])->default('pending');
             $table->enum('priority', ['normal', 'rush', 'urgent'])->default('normal');
             $table->decimal('subtotal', 10, 2)->default(0);
             $table->decimal('tax_amount', 10, 2)->default(0);
@@ -22,6 +23,8 @@ return new class extends Migration
             $table->decimal('total', 10, 2)->default(0);
             $table->enum('payment_method', ['cash', 'card', 'mobile', 'split'])->nullable();
             $table->text('notes')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('placed_at')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();

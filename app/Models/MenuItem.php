@@ -3,13 +3,15 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasUserTracking;
+use App\Models\Traits\SetsRestaurant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MenuItem extends Model
 {
-    use HasFactory;
+    use HasFactory, SetsRestaurant, HasUserTracking;
 
     protected $fillable = [
         'restaurant_id',
@@ -19,16 +21,22 @@ class MenuItem extends Model
         'price',
         'cost',
         'is_available',
+        'is_active',
         'preparation_time',
         'image_url',
         'allergens',
+        'ingredients',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'cost' => 'decimal:2',
         'is_available' => 'boolean',
+        'is_active' => 'boolean',
         'allergens' => 'array',
+        'ingredients' => 'array',
     ];
 
     public function restaurant(): BelongsTo

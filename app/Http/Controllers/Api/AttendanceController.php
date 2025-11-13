@@ -60,8 +60,11 @@ class AttendanceController extends Controller
             'staff_id' => 'required|exists:staff,id',
         ]);
 
-        $staff = Staff::where('restaurant_id', Tenant::id())
-            ->findOrFail($request->staff_id);
+        // Load staff member - if Tenant::id() is null (SuperAdmin context), 
+        // still find the staff by ID and use their restaurant_id
+        $staff = Tenant::id() 
+            ? Staff::where('restaurant_id', Tenant::id())->findOrFail($request->staff_id)
+            : Staff::findOrFail($request->staff_id);
 
         // Check if already clocked in
         $activeAttendance = $staff->attendances()
@@ -75,9 +78,10 @@ class AttendanceController extends Controller
             ], 422);
         }
 
+        // Use staff's restaurant_id instead of Tenant::id() to avoid null constraint violation
         $attendance = Attendance::create([
             'staff_id' => $staff->id,
-            'restaurant_id' => Tenant::id(),
+            'restaurant_id' => $staff->restaurant_id,
             'clock_in' => now(),
         ]);
         event(new StaffClockedIn($attendance));
@@ -137,8 +141,11 @@ class AttendanceController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        $staff = Staff::where('restaurant_id', Tenant::id())
-            ->findOrFail($request->staff_id);
+        // Load staff member - if Tenant::id() is null (SuperAdmin context), 
+        // still find the staff by ID
+        $staff = Tenant::id() 
+            ? Staff::where('restaurant_id', Tenant::id())->findOrFail($request->staff_id)
+            : Staff::findOrFail($request->staff_id);
 
         $attendance = $staff->attendances()
             ->whereNull('clock_out')

@@ -4,14 +4,14 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreMenuCategoryRequest extends FormRequest
+class RestoreTableRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return false;
+        return $this->user()->hasAnyRole(['SuperAdmin', 'Owner', 'Manager']);
     }
 
     /**
@@ -22,8 +22,7 @@ class StoreMenuCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'        => ['required','string','max:120'],
-            'description' => ['nullable','string','max:200']
+            // No additional validation needed for restore
         ];
     }
 }

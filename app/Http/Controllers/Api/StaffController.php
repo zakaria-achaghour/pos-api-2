@@ -6,9 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStaffRequest;
 use App\Http\Requests\UpdateStaffRequest;
 use App\Models\Staff;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Infrastructure\Tenancy\Tenant;
+use Spatie\Permission\Models\Role;
 
 class StaffController extends Controller
 {
@@ -23,21 +27,21 @@ class StaffController extends Controller
      *     path="/api/staff",
      *     tags={"Staff Management"},
      *     summary="List all staff members",
-     *     description="Retrieve paginated list of staff members for the authenticated restaurant",
+     *     description="Retrieve paginated list of staff members (employee records) for the authenticated restaurant. Each staff member can be linked to a user account for authentication.",
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="status",
      *         in="query",
-     *         description="Filter by staff status",
+     *         description="Filter by staff status (active: can login, inactive/vacation: cannot login)",
      *         required=false,
-     *         @OA\Schema(type="string", enum={"active", "inactive", "terminated"})
+     *         @OA\Schema(type="string", enum={"active", "inactive", "vacation"})
      *     ),
      *     @OA\Parameter(
-     *         name="position",
+     *         name="role",
      *         in="query",
-     *         description="Filter by staff position",
+     *         description="Filter by user role (Waiter, Kitchen, Cashier, Manager)",
      *         required=false,
-     *         @OA\Schema(type="string", example="Manager")
+     *         @OA\Schema(type="string", example="Waiter")
      *     ),
      *     @OA\Parameter(
      *         name="page",
@@ -45,6 +49,13 @@ class StaffController extends Controller
      *         description="Page number for pagination",
      *         required=false,
      *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page (default: 15)",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=10)
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -55,6 +66,7 @@ class StaffController extends Controller
      *                 @OA\Items(
      *                     @OA\Property(property="id", type="integer", example=1),
      *                     @OA\Property(property="restaurant_id", type="integer", example=1),
+     *                     @OA\Property(property="user_id", type="integer", nullable=true, example=5, description="ID of the linked user account for authentication"),
      *                     @OA\Property(property="employee_id", type="string", example="golden-fork-001"),
      *                     @OA\Property(property="first_name", type="string", example="John"),
      *                     @OA\Property(property="last_name", type="string", example="Doe"),
@@ -66,7 +78,21 @@ class StaffController extends Controller
      *                     @OA\Property(property="hire_date", type="string", format="date", example="2024-01-15"),
      *                     @OA\Property(property="status", type="string", example="active"),
      *                     @OA\Property(property="emergency_contact_name", type="string", example="Jane Doe"),
-     *                     @OA\Property(property="emergency_contact_phone", type="string", example="+1-555-0124")
+     *                     @OA\Property(property="emergency_contact_phone", type="string", example="+1-555-0124"),
+     *                     @OA\Property(property="user", type="object", nullable=true, description="Linked user account",
+     *                         @OA\Property(property="id", type="integer", example=5),
+     *                         @OA\Property(property="name", type="string", example="John Doe"),
+     *                         @OA\Property(property="email", type="string", example="john.doe@example.com")
+     *                     ),
+     *                     @OA\Property(property="active_attendance", type="array", description="Current active attendance record (clock-in without clock-out)",
+     *                         @OA\Items(
+     *                             @OA\Property(property="id", type="integer", example=42),
+     *                             @OA\Property(property="staff_id", type="integer", example=1),
+     *                             @OA\Property(property="restaurant_id", type="integer", example=1),
+     *                             @OA\Property(property="clock_in", type="string", format="datetime", example="2025-11-11T08:30:00.000000Z"),
+     *                             @OA\Property(property="clock_out", type="string", nullable=true, example=null)
+     *                         )
+     *                     )
      *                 )
      *             ),
      *             @OA\Property(property="per_page", type="integer", example=15),
@@ -93,17 +119,33 @@ class StaffController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Staff::where('restaurant_id', Tenant::id());
+            $query = Staff::with([
+                'user:id,name,email,restaurant_id',
+                'activeAttendance:id,staff_id,restaurant_id,clock_in,clock_out'
+            ])->where('restaurant_id', Tenant::id());
+
+            // Handle soft deletes
+            if ($request->boolean('only_deleted')) {
+                $query->onlyTrashed();
+            } elseif ($request->boolean('with_deleted')) {
+                $query->withTrashed();
+            }
 
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }
 
-            if ($request->has('position')) {
-                $query->where('position', $request->position);
+            // Filter by role from user relationship (case-insensitive)
+            if ($request->has('role')) {
+                $query->whereHas('user', function($q) use ($request) {
+                    $q->whereHas('roles', function($roleQuery) use ($request) {
+                        $roleQuery->whereRaw('LOWER(name) = ?', [strtolower($request->role)]);
+                    });
+                });
             }
 
-            $staff = $query->orderBy('first_name')->paginate();
+            $perPage = $request->input('per_page', 15);
+            $staff = $query->orderBy('first_name')->paginate($perPage);
 
             return response()->json($staff);
         } catch (\Exception $e) {
@@ -120,22 +162,25 @@ class StaffController extends Controller
      *     path="/api/staff",
      *     tags={"Staff Management"},
      *     summary="Create a new staff member",
-     *     description="Add a new staff member to the restaurant",
+     *     description="Add a new staff member (employee record) to the restaurant. Optionally link to an existing user account via user_id for authentication.",
      *     security={{"bearerAuth":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"first_name","last_name","email","position","department","hourly_rate","hire_date","status"},
+     *             required={"first_name","last_name","email","position","department","hourly_rate","hire_date","status","password","role"},
+     *             @OA\Property(property="user_id", type="integer", nullable=true, example=5, description="ID of existing user account to link this staff member to"),
      *             @OA\Property(property="employee_id", type="string", example="golden-fork-015"),
      *             @OA\Property(property="first_name", type="string", example="John"),
      *             @OA\Property(property="last_name", type="string", example="Doe"),
      *             @OA\Property(property="email", type="string", format="email", example="john.doe@example.com"),
+     *             @OA\Property(property="password", type="string", format="password", example="password123", description="Password for user login account"),
+     *             @OA\Property(property="role", type="string", enum={"Manager", "Cashier", "Waiter", "Kitchen"}, example="Waiter", description="User role for permissions"),
      *             @OA\Property(property="phone", type="string", example="+1-555-0123"),
      *             @OA\Property(property="position", type="string", example="Server"),
      *             @OA\Property(property="department", type="string", example="Service"),
      *             @OA\Property(property="hourly_rate", type="number", format="float", example=15.50),
      *             @OA\Property(property="hire_date", type="string", format="date", example="2024-12-01"),
-     *             @OA\Property(property="status", type="string", enum={"active", "inactive", "terminated"}, example="active"),
+     *             @OA\Property(property="status", type="string", enum={"active", "inactive", "vacation"}, example="active", description="Staff status - only 'active' staff can login"),
      *             @OA\Property(property="emergency_contact_name", type="string", example="Jane Doe"),
      *             @OA\Property(property="emergency_contact_phone", type="string", example="+1-555-0124")
      *         )
@@ -188,14 +233,61 @@ class StaffController extends Controller
      */
     public function store(StoreStaffRequest $request): JsonResponse
     {
-        $data = $request->validated();
-        // Set tenant restaurant context
-        $data['restaurant_id'] = Tenant::id();
+        try {
+            DB::beginTransaction();
 
-        $staff = Staff::create($data);
-        $staff->load(['attendances']);
+            $data = $request->validated();
+            
+            // Resolve role dynamically
+            $role = Role::where('guard_name', 'api')
+                ->where('name', $data['role'])
+                ->first();
 
-        return response()->json($staff, 201);
+            if (!$role) {
+                return response()->json([
+                    'message' => 'Invalid role specified',
+                    'error' => "Role '{$data['role']}' not found"
+                ], 422);
+            }
+            
+            // Create user account first
+            $user = User::create([
+                'name' => $data['first_name'] . ' ' . $data['last_name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'restaurant_id' => Tenant::id(),
+                'email_verified_at' => now(),
+                'is_active' => ($data['status'] ?? 'active') === 'active', // Only active staff can login
+            ]);
+
+            // Assign role to user
+            $user->assignRole($role);
+
+            // Optionally sync custom permissions if provided
+            if (!empty($data['permissions'])) {
+                $user->syncPermissions($data['permissions']);
+            }
+
+            // Create staff record linked to user
+            $data['restaurant_id'] = Tenant::id();
+            $data['user_id'] = $user->id;
+            
+            // Remove password, role, and permissions from staff data
+            unset($data['password'], $data['role'], $data['permissions']);
+
+            $staff = Staff::create($data);
+            $staff->load(['user', 'attendances']);
+
+            DB::commit();
+
+            return response()->json($staff, 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to create staff member',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function show(Staff $staff): JsonResponse
@@ -204,7 +296,11 @@ class StaffController extends Controller
         
         abort_unless($staff->restaurant_id === Tenant::id(), 404);
         
-        $staff->load(['attendances']);
+        $staff->load([
+            'user',
+            'attendances',
+            'activeAttendance:id,staff_id,restaurant_id,clock_in,clock_out'
+        ]);
 
         return response()->json($staff);
     }
@@ -216,8 +312,15 @@ class StaffController extends Controller
         abort_unless($staff->restaurant_id === Tenant::id(), 404);
         $data = $request->validated();
 
+        // If status is being updated, sync with user's is_active
+        if (isset($data['status']) && $staff->user) {
+            $staff->user->update([
+                'is_active' => $data['status'] === 'active'
+            ]);
+        }
+
         $staff->update($data);
-        $staff->load(['attendances']);
+        $staff->load(['user', 'attendances']);
 
         return response()->json($staff);
     }
@@ -230,6 +333,77 @@ class StaffController extends Controller
         $staff->delete();
 
         return response()->json(['message' => 'Staff member deleted successfully']);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/staff/{id}/restore",
+     *     tags={"Staff Management"},
+     *     summary="Restore a soft-deleted staff member",
+     *     description="Restore a previously deleted staff member",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Staff ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Staff member restored successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Staff member not found"
+     *     )
+     * )
+     */
+    public function restore(int $id): JsonResponse
+    {
+        $staff = Staff::withTrashed()->findOrFail($id);
+        abort_unless($staff->restaurant_id === Tenant::id(), 404);
+        
+        $staff->restore();
+
+        return response()->json([
+            'message' => 'Staff member restored successfully',
+            'data' => $staff->load('user')
+        ]);
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/api/staff/{id}/force",
+     *     tags={"Staff Management"},
+     *     summary="Permanently delete a staff member",
+     *     description="Permanently delete a staff member from the database (cannot be undone)",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Staff ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Staff member permanently deleted"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Staff member not found"
+     *     )
+     * )
+     */
+    public function forceDelete(int $id): JsonResponse
+    {
+        $staff = Staff::withTrashed()->findOrFail($id);
+        abort_unless($staff->restaurant_id === Tenant::id(), 404);
+        
+        $staff->forceDelete();
+
+        return response()->json(['message' => 'Staff member permanently deleted']);
     }
 
     public function performance(Request $request): JsonResponse

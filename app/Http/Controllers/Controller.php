@@ -68,23 +68,8 @@ namespace App\Http\Controllers;
  * )
  * 
  * @OA\Tag(
- *     name="Schedules",
- *     description="Staff scheduling and shift management"
- * )
- * 
- * @OA\Tag(
  *     name="Reports",
  *     description="Business reporting and analytics"
- * )
- * 
- * @OA\Tag(
- *     name="Analytics",
- *     description="Dashboard metrics and analytics"
- * )
- * 
- * @OA\Tag(
- *     name="Table Analytics",
- *     description="Table-specific analytics and metrics"
  * )
  * 
  * @OA\Schema(
@@ -102,6 +87,39 @@ namespace App\Http\Controllers;
  *     type="object",
  *     @OA\Property(property="message", type="string", example="Error message"),
  *     @OA\Property(property="errors", type="object", nullable=true)
+ * )
+ * 
+ * @OA\Response(
+ *     response="Unauthorized",
+ *     description="Unauthenticated - Invalid or missing token",
+ *     @OA\JsonContent(
+ *         @OA\Property(property="message", type="string", example="Unauthenticated.")
+ *     )
+ * )
+ * 
+ * @OA\Response(
+ *     response="Forbidden",
+ *     description="Forbidden - User does not have permission",
+ *     @OA\JsonContent(
+ *         @OA\Property(property="message", type="string", example="User does not have the right roles.")
+ *     )
+ * )
+ * 
+ * @OA\Response(
+ *     response="NotFound",
+ *     description="Resource not found",
+ *     @OA\JsonContent(
+ *         @OA\Property(property="message", type="string", example="Resource not found")
+ *     )
+ * )
+ * 
+ * @OA\Response(
+ *     response="ValidationError",
+ *     description="Validation error",
+ *     @OA\JsonContent(
+ *         @OA\Property(property="message", type="string", example="The given data was invalid."),
+ *         @OA\Property(property="errors", type="object")
+ *     )
  * )
  * 
  * @OA\Schema(
@@ -255,33 +273,6 @@ namespace App\Http\Controllers;
  *     @OA\Property(property="staff", ref="#/components/schemas/Staff")
  * )
  * 
- * @OA\Schema(
- *     schema="Schedule",
- *     type="object",
- *     @OA\Property(property="id", type="integer", example=1),
- *     @OA\Property(property="staff_id", type="integer", example=5),
- *     @OA\Property(property="date", type="string", format="date", example="2024-01-15"),
- *     @OA\Property(property="start_time", type="string", format="time", example="09:00:00"),
- *     @OA\Property(property="end_time", type="string", format="time", example="17:00:00"),
- *     @OA\Property(property="shift_type", type="string", enum={"morning", "afternoon", "evening", "night"}, example="morning"),
- *     @OA\Property(property="status", type="string", enum={"scheduled", "confirmed", "cancelled"}, example="scheduled"),
- *     @OA\Property(property="notes", type="string", example="Training shift"),
- *     @OA\Property(property="restaurant_id", type="integer", example=1),
- *     @OA\Property(property="created_at", type="string", format="date-time"),
- *     @OA\Property(property="updated_at", type="string", format="date-time"),
- *     @OA\Property(property="staff", ref="#/components/schemas/Staff")
- * )
- * 
- * @OA\Schema(
- *     schema="Analytics",
- *     type="object",
- *     @OA\Property(property="total_sales", type="number", format="float", example=15420.50),
- *     @OA\Property(property="total_orders", type="integer", example=342),
- *     @OA\Property(property="average_order_value", type="number", format="float", example=45.12),
- *     @OA\Property(property="peak_hours", type="array", @OA\Items(type="integer"), example={12, 13, 19, 20}),
- *     @OA\Property(property="top_items", type="array", @OA\Items(ref="#/components/schemas/MenuItem")),
- *     @OA\Property(property="staff_performance", type="array", @OA\Items(type="object"))
- * )
  */
 abstract class Controller
 {

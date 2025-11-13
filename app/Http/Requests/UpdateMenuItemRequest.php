@@ -11,7 +11,7 @@ class UpdateMenuItemRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return $this->user()->hasAnyRole(['SuperAdmin', 'Owner', 'Manager']);
     }
 
     /**
@@ -22,11 +22,18 @@ class UpdateMenuItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'category_id' => ['sometimes','integer','exists:menu_categories,id'],
-            'name'        => ['sometimes','string','max:160'],
-            'description' => ['nullable','string'],
-            'price'       => ['sometimes','numeric','min:0.01'],
-            'is_active'   => ['sometimes','boolean']
+            'category_id'       => ['sometimes','integer','exists:categories,id'],
+            'name'              => ['sometimes','string','max:160'],
+            'description'       => ['nullable','string'],
+            'price'             => ['sometimes','numeric','min:0.01'],
+            'cost'              => ['nullable','numeric','min:0'],
+            'is_available'      => ['sometimes','boolean'],
+            'is_active'         => ['sometimes','boolean'],
+            'preparation_time'  => ['nullable','integer','min:0'],
+            'image_url'         => ['nullable','string','url','max:500'],
+            'allergens'         => ['nullable','array'],
+            'ingredients'       => ['nullable','array'],
+            'ingredients.*'     => ['string','max:255']
         ];
     }
 }

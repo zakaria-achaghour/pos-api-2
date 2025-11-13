@@ -4,14 +4,14 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateMenuCategoryRequest extends FormRequest
+class RestoreStaffRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return false;
+        return $this->user()->hasAnyRole(['SuperAdmin', 'Owner', 'Manager']);
     }
 
     /**
@@ -22,8 +22,7 @@ class UpdateMenuCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'        => ['sometimes','string','max:120'],
-            'description' => ['nullable','string','max:200']
+            // No additional validation needed for restore
         ];
     }
 }

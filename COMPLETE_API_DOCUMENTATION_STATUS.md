@@ -74,33 +74,12 @@
 - `GET /api/staff/attendance/reports/summary-pdf` - Generate summary PDF
 - `GET /api/staff/attendance/reports/detailed-pdf` - Generate detailed PDF
 
-### 📅 **Schedules (5+ routes)** ✨ **NEWLY DOCUMENTED**
-- `GET /api/schedules` - List staff schedules (with filtering)
-- `POST /api/schedules` - Create schedule
-- `GET /api/schedules/{id}` - Get schedule details
-- `PUT /api/schedules/{id}` - Update schedule
-- `DELETE /api/schedules/{id}` - Delete schedule
-- `GET /api/schedules/weekly` - Weekly schedule view
-- `POST /api/schedules/bulk` - Bulk schedule creation
-
 ### 📊 **Reports (5 routes)** ✨ **NEWLY DOCUMENTED**
 - `GET /api/reports/summary` - Business summary report
 - `GET /api/reports/sales` - Sales reports
 - `GET /api/reports/items` - Item performance reports
 - `GET /api/reports/staff` - Staff performance reports
 - `POST /api/reports/export` - Export reports
-
-### 📈 **Analytics (3 routes)** ✨ **NEWLY DOCUMENTED**
-- `GET /api/dashboard/metrics` - Dashboard metrics
-- `GET /api/dashboard/charts` - Sales charts data
-- `GET /api/dashboard/top-items` - Top performing items
-
-### 📊 **Table Analytics (5 routes)** ✨ **NEWLY DOCUMENTED**
-- `GET /api/tables/analytics` - Table analytics overview
-- `GET /api/tables/{id}/analytics` - Specific table analytics
-- `GET /api/tables/occupancy-rates` - Table occupancy rates
-- `GET /api/tables/revenue-per-table` - Revenue per table
-- `PUT /api/tables/layout` - Update table layout
 
 ## 🎉 **DOCUMENTATION FEATURES IMPLEMENTED**
 
@@ -126,8 +105,8 @@
 - **User, Staff, Restaurant** entities fully defined
 - **Order, OrderItem, Table** with relationships
 - **MenuCategory, MenuItem** with category linking
-- **KitchenTicket, Attendance, Schedule** with staff relations
-- **Analytics, Reports** with metric structures
+- **KitchenTicket, Attendance** with staff relations
+- **Reports** with metric structures
 - **PaginatedResponse** for list endpoints
 - **ErrorResponse** for error handling
 
@@ -141,10 +120,7 @@
 - **Menu Items** - Item management
 - **Kitchen Management** - Kitchen operations
 - **Attendance** - Time tracking
-- **Schedules** - Staff scheduling
 - **Reports** - Business reporting
-- **Analytics** - Dashboard metrics
-- **Table Analytics** - Table-specific data
 
 ### ✅ **Advanced Features**
 - **Filtering support** - Status, date ranges, staff filters

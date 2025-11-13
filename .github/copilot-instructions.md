@@ -65,6 +65,7 @@ Important files to reference:
 - Tests use an in-memory sqlite DB — behavior differs from Postgres (e.g., JSON/array column handling). Favor adapter-agnostic queries in tests.
 - Some dev scripts expect `npm`/`vite` for asset tooling; API work usually doesn't require building frontend assets but `composer dev` triggers it.
 - Route ordering matters: specific routes (e.g., `/tables/analytics`) must come before resource routes (e.g., `apiResource('tables')`) to avoid parameter conflicts where "analytics" gets treated as a table ID.
+- Form Request authorization: Laravel form requests default to `authorize() { return false; }`. For management endpoints (tables, menu items, categories), use `$this->user()->hasAnyRole(['SuperAdmin', 'Owner', 'Manager'])`. For operational endpoints (orders, order items), use `auth()->check()`.
 
 ---
 If anything in these instructions is unclear or you want more detail about a specific area (database models, tenancy, JWT handling, or testing patterns), tell me which part and I'll expand or adjust the file.

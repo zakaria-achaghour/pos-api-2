@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('staff', function (Blueprint $table) {
             $table->id();
             $table->foreignId('restaurant_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('employee_id')->unique();
             $table->string('first_name');
             $table->string('last_name');
@@ -20,11 +21,13 @@ return new class extends Migration
             $table->string('department');
             $table->decimal('hourly_rate', 8, 2);
             $table->date('hire_date');
-            $table->enum('status', ['active', 'inactive', 'terminated'])->default('active');
+            $table->enum('status', ['active', 'inactive', 'vacation'])->default('active');
             $table->string('emergency_contact_name')->nullable();
             $table->string('emergency_contact_phone')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
-            
+            $table->softDeletes();
             $table->index(['restaurant_id', 'status']);
             $table->index(['restaurant_id', 'position']);
         });

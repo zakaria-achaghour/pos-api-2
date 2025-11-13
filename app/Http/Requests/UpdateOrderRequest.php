@@ -16,7 +16,9 @@ class UpdateOrderRequest extends FormRequest
     {
         return [
             'waiter_id' => 'sometimes|exists:staff,id',
-            'priority' => 'sometimes|in:normal,rush',
+            'type' => 'sometimes|in:dine-in,takeout,delivery',
+            'status' => 'sometimes|in:pending,accepted,preparing,ready,served,completed,cancelled',
+            'priority' => 'sometimes|in:normal,rush,urgent',
             'notes' => 'nullable|string|max:500',
         ];
     }

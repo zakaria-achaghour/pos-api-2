@@ -14,7 +14,12 @@ return new class extends Migration
             $table->foreignId('menu_item_id')->constrained()->onDelete('cascade');
             $table->integer('quantity');
             $table->decimal('unit_price', 8, 2);
+            $table->enum('state', ['pending', 'preparing', 'ready', 'served'])->default('pending');
             $table->text('special_instructions')->nullable();
+            $table->json('removed_ingredients')->nullable();
+            $table->json('added_extras')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
             
             $table->index(['order_id']);

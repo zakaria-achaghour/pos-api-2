@@ -27,7 +27,7 @@ class OrderSeeder extends Seeder
         $tables = Table::where('restaurant_id', $restaurant->id)->get();
         $menuItems = MenuItem::where('restaurant_id', $restaurant->id)->get();
         $waiters = Staff::where('restaurant_id', $restaurant->id)
-            ->where('position', 'Server')
+            ->where('department', 'Service')
             ->get();
 
         // Create orders for the last 30 days
@@ -43,7 +43,8 @@ class OrderSeeder extends Seeder
                     'restaurant_id' => $restaurant->id,
                     'table_id' => $table->id,
                     'waiter_id' => $waiter->id,
-                    'status' => fake()->randomElement(['paid', 'paid', 'paid', 'cancelled']),
+                    'type' => fake()->randomElement(['dine-in', 'dine-in', 'dine-in', 'takeout', 'delivery']),
+                    'status' => fake()->randomElement(['completed', 'completed', 'completed', 'cancelled']),
                     'priority' => fake()->randomElement(['normal', 'normal', 'rush']),
                     'subtotal' => 0,
                     'tax_amount' => 0,

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasUserTracking;
 use App\Models\Traits\SetsRestaurant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class KitchenTicket extends Model
 {
-    use HasFactory, SetsRestaurant;
+    use HasFactory, SetsRestaurant, HasUserTracking;
 
     protected $fillable = [
         'restaurant_id',
@@ -21,13 +22,18 @@ class KitchenTicket extends Model
         'cooking_station',
         'started_at',
         'completed_at',
+        'bumped_at',
         'preparation_time',
         'special_instructions',
+        'notes',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'bumped_at' => 'datetime',
     ];
 
     public function restaurant(): BelongsTo
@@ -59,7 +65,15 @@ class KitchenTicket extends Model
             'status' => 'ready',
             'completed_at' => now(),
             'preparation_time' => $this->started_at ? 
-                $this->started_at->diffInMinutes(now()) : null,
+                (int) $this->started_at->diffInMinutes(now()) : null,
+        ]);
+    }
+
+    public function markAsServed(): void
+    {
+        $this->update([
+            'status' => 'served',
+            'bumped_at' => now(),
         ]);
     }
 }

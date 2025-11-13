@@ -11,7 +11,7 @@ class UpdateTableRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return $this->user()->hasAnyRole(['SuperAdmin', 'Owner', 'Manager']);
     }
 
     /**
@@ -22,9 +22,28 @@ class UpdateTableRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'     => ['sometimes','string','max:100'],
-            'capacity' => ['nullable','integer','min:1'],
-            'status'   => ['sometimes','in:available,occupied']
+            'number'              => ['sometimes', 'string', 'max:50'],
+            'capacity'            => ['sometimes', 'integer', 'min:1', 'max:50'],
+            'status'              => ['sometimes', 'in:available,occupied,reserved,maintenance,out-of-order'],
+            'section'             => ['nullable', 'string', 'max:100'],
+            'shape'               => ['sometimes', 'in:round,square,rectangular,oval'],
+            'grid_x'              => ['nullable', 'integer'],
+            'grid_y'              => ['nullable', 'integer'],
+            'qr_code'             => ['nullable', 'string', 'max:255'],
+            'location'            => ['nullable', 'array'],
+            'location.section'    => ['nullable', 'string', 'max:100'],
+            'location.floor'      => ['nullable', 'integer'],
+            'location.area'       => ['nullable', 'string', 'max:100'],
+            'features'            => ['nullable', 'array'],
+            'features.*'          => ['string', 'max:100'],
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        // Model will handle syncing section from location
     }
 }

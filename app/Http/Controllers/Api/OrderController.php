@@ -43,7 +43,14 @@ class OrderController extends Controller
      *         in="query",
      *         description="Filter by order status",
      *         required=false,
-     *         @OA\Schema(type="string", enum={"open", "preparing", "ready", "served", "paid", "cancelled"})
+     *         @OA\Schema(type="string", enum={"pending", "accepted", "preparing", "ready", "served", "completed", "cancelled"})
+     *     ),
+     *     @OA\Parameter(
+     *         name="type",
+     *         in="query",
+     *         description="Filter by order type",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"dine-in", "takeout", "delivery"})
      *     ),
      *     @OA\Parameter(
      *         name="table_id",
@@ -103,6 +110,10 @@ class OrderController extends Controller
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
+        }
+
+        if ($request->has('type')) {
+            $query->where('type', $request->type);
         }
 
         if ($request->has('table_id')) {
@@ -215,7 +226,10 @@ class OrderController extends Controller
      */
     public function show(Order $order): JsonResponse
     {
-        $this->authorize('view', $order);
+        // Operational endpoint - just check if user is authenticated
+        if (!auth()->check()) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
         
         $order->load([
             'table',
@@ -225,6 +239,72 @@ class OrderController extends Controller
         ]);
 
         return response()->json($order);
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/api/orders/{order}",
+     *     tags={"Orders"},
+     *     summary="Update an order",
+     *     description="Update order details such as waiter, type, status, priority, or notes",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="order",
+     *         in="path",
+     *         description="Order ID",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=286)
+     *     ),
+     *     @OA\RequestBody(
+     *         required=false,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="waiter_id", type="integer", example=5, description="ID of the assigned waiter"),
+     *             @OA\Property(property="type", type="string", enum={"dine-in", "takeout", "delivery"}, example="dine-in"),
+     *             @OA\Property(property="status", type="string", enum={"pending", "accepted", "preparing", "ready", "served", "completed", "cancelled"}, example="accepted"),
+     *             @OA\Property(property="priority", type="string", enum={"normal", "rush", "urgent"}, example="normal"),
+     *             @OA\Property(property="notes", type="string", example="Customer has allergies", description="Order notes or special instructions")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Order updated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Order updated successfully"),
+     *             @OA\Property(property="order", ref="#/components/schemas/Order")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, ref="#/components/responses/Unauthorized"),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=422, ref="#/components/responses/ValidationError")
+     * )
+     */
+    public function update(UpdateOrderRequest $request, Order $order): JsonResponse
+    {
+        // Operational endpoint - just check if user is authenticated
+        if (!auth()->check()) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        // Prevent editing if order is completed or cancelled
+        if (in_array($order->status, ['completed', 'cancelled'])) {
+            return response()->json([
+                'message' => 'Cannot update a completed or cancelled order',
+                'current_status' => $order->status
+            ], 422);
+        }
+
+        // Update only the fields that are present in the request
+        $order->update($request->validated());
+
+        // If status changed, trigger event
+        if ($request->has('status') && $request->status !== $order->getOriginal('status')) {
+            event(new OrderStatusUpdated($order, $request->status));
+        }
+
+        return response()->json([
+            'message' => 'Order updated successfully',
+            'order' => $order->fresh(['table', 'waiter', 'orderItems.menuItem'])
+        ]);
     }
 
     /**
@@ -278,8 +358,19 @@ class OrderController extends Controller
      */
     public function addItem(Request $request, Order $order): JsonResponse
     {
-        $this->authorize('update', $order);
+        // Operational endpoint - just check if user is authenticated
+        if (!auth()->check()) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
         
+        // Prevent editing if order is already being prepared
+        if (in_array($order->status, ['preparing', 'ready', 'served', 'completed'])) {
+            return response()->json([
+                'message' => 'Cannot modify order. Order is already being prepared or has been completed.',
+                'current_status' => $order->status
+            ], 422);
+        }
+
         $request->validate([
             'menu_item_id' => 'required|exists:menu_items,id',
             'quantity' => 'required|integer|min:1',
@@ -309,8 +400,19 @@ class OrderController extends Controller
 
     public function updateItem(Request $request, Order $order, OrderItem $orderItem): JsonResponse
     {
-        $this->authorize('update', $order);
+        // Operational endpoint - just check if user is authenticated
+        if (!auth()->check()) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
         
+        // Prevent editing if order is already being prepared
+        if (in_array($order->status, ['preparing', 'ready', 'served', 'completed'])) {
+            return response()->json([
+                'message' => 'Cannot modify order. Order is already being prepared or has been completed.',
+                'current_status' => $order->status
+            ], 422);
+        }
+
         if ($orderItem->order_id !== $order->id) {
             return response()->json(['message' => 'Order item not found'], 404);
         }
@@ -332,8 +434,18 @@ class OrderController extends Controller
 
     public function removeItem(Order $order, OrderItem $orderItem): JsonResponse
     {
-        $this->authorize('update', $order);
+        if (!auth()->check()) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
         
+        // Prevent editing if order is already being prepared
+        if (in_array($order->status, ['preparing', 'ready', 'served', 'completed'])) {
+            return response()->json([
+                'message' => 'Cannot modify order. Order is already being prepared or has been completed.',
+                'current_status' => $order->status
+            ], 422);
+        }
+
         if ($orderItem->order_id !== $order->id) {
             return response()->json(['message' => 'Order item not found'], 404);
         }
@@ -349,7 +461,9 @@ class OrderController extends Controller
 
     public function close(Request $request, Order $order): JsonResponse
     {
-        $this->authorize('update', $order);
+        if (!auth()->check()) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
         
         $request->validate([
             'payment_method' => 'required|in:cash,card,mobile',
@@ -364,7 +478,7 @@ class OrderController extends Controller
         }
 
         $order->update([
-            'status' => 'paid',
+            'status' => 'completed',
             'payment_method' => $request->payment_method,
             'discount_amount' => $request->discount_amount ?? 0,
             'tax_amount' => $request->tax_amount ?? 0,
@@ -372,17 +486,245 @@ class OrderController extends Controller
         ]);
 
         $this->recalculateOrderTotal($order);
+        $order->refresh();
 
         // Update table status if applicable
         if ($order->table) {
             $order->table->update(['status' => 'available']);
         }
 
-        event(new OrderStatusUpdated($order, 'paid'));
+        event(new OrderStatusUpdated($order, 'completed'));
+
+        $this->syncPaymentRecord($order, [
+            'amount' => $order->total,
+            'method' => $order->payment_method,
+            'paid_at' => $order->paid_at,
+        ]);
 
         return response()->json([
             'message' => 'Order closed successfully',
             'order' => $order->fresh()
+        ]);
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/orders/{order}/payment",
+     *     tags={"Orders"},
+     *     summary="Update payment information for an order",
+     *     description="Update payment details including payment method, status, amount received, and tip",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="order",
+     *         in="path",
+     *         description="Order ID",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"payment_method", "payment_status"},
+     *             @OA\Property(property="payment_method", type="string", enum={"cash", "card", "mobile"}, example="cash"),
+     *             @OA\Property(property="payment_status", type="string", enum={"pending", "completed", "failed", "refunded"}, example="completed"),
+     *             @OA\Property(property="amount_received", type="number", format="float", example=500.00, description="Amount received from customer"),
+     *             @OA\Property(property="tip_amount", type="number", format="float", example=13.52, description="Tip amount"),
+     *             @OA\Property(property="transaction_id", type="string", example="TXN123456", description="Payment transaction ID")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Payment updated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Payment updated successfully"),
+     *             @OA\Property(property="order", ref="#/components/schemas/Order"),
+     *             @OA\Property(property="payment", type="object",
+     *                 @OA\Property(property="id", type="integer", example=1),
+     *                 @OA\Property(property="order_id", type="integer", example=1),
+     *                 @OA\Property(property="amount", type="number", example=500.00),
+     *                 @OA\Property(property="method", type="string", example="cash"),
+     *                 @OA\Property(property="transaction_id", type="string", example="TXN123456"),
+     *                 @OA\Property(property="paid_at", type="string", format="date-time", example="2024-01-15T10:30:00Z")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=401, ref="#/components/responses/Unauthorized"),
+     *     @OA\Response(response=403, ref="#/components/responses/Forbidden"),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=422, ref="#/components/responses/ValidationError")
+     * )
+     */
+    public function updatePayment(Request $request, Order $order): JsonResponse
+    {
+        // Operational endpoint - just check if user is authenticated
+        if (!auth()->check()) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $validated = $request->validate([
+            'payment_method' => 'required|in:cash,card,mobile',
+            'payment_status' => 'required|in:pending,completed,failed,refunded',
+            'amount_received' => 'nullable|numeric|min:0',
+            'tip_amount' => 'nullable|numeric|min:0',
+            'transaction_id' => 'nullable|string|max:255',
+        ]);
+
+        // Calculate total with tip if provided
+        $tipAmount = $validated['tip_amount'] ?? 0;
+        $totalWithTip = $order->total + $tipAmount;
+
+        // Update order payment details
+        $order->update([
+            'payment_method' => $validated['payment_method'],
+        ]);
+
+        // If payment status is completed, mark order as paid
+        if ($validated['payment_status'] === 'completed') {
+            $order->update([
+                'status' => 'completed',
+                'paid_at' => now(),
+            ]);
+
+            // Update table status if applicable
+            if ($order->table) {
+                $order->table->update(['status' => 'available']);
+            }
+
+            event(new OrderStatusUpdated($order, 'completed'));
+        }
+
+        // Create or update payment record
+        $payment = $this->syncPaymentRecord($order->fresh(), [
+            'amount' => $validated['amount_received'] ?? $totalWithTip,
+            'method' => $validated['payment_method'],
+            'transaction_id' => $validated['transaction_id'] ?? null,
+            'paid_at' => $validated['payment_status'] === 'completed' ? now() : null,
+        ]);
+
+        return response()->json([
+            'message' => 'Payment updated successfully',
+            'order' => $order->fresh(['table', 'waiter', 'orderItems.menuItem']),
+            'payment' => $payment,
+            'change_due' => max(0, ($validated['amount_received'] ?? 0) - $totalWithTip),
+        ]);
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/orders/{order}/status",
+     *     tags={"Orders"},
+     *     summary="Update order status",
+     *     description="Update the status of an order. When status changes to 'accepted', a kitchen ticket is automatically created for the order if it doesn't already have one.",
+     *     security={{"bearer_token": {}}},
+     *     @OA\Parameter(
+     *         name="order",
+     *         in="path",
+     *         description="Order ID",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=286)
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"status"},
+     *             @OA\Property(
+     *                 property="status",
+     *                 type="string",
+     *                 enum={"pending", "accepted", "preparing", "ready", "served", "completed", "cancelled"},
+     *                 example="accepted",
+     *                 description="New status for the order. Setting status to 'accepted' automatically creates a kitchen ticket."
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Order status updated successfully. If status was changed to 'accepted', a kitchen ticket has been created automatically.",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Order status updated successfully"),
+     *             @OA\Property(property="order", ref="#/components/schemas/Order")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, ref="#/components/responses/Unauthorized"),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=422, ref="#/components/responses/ValidationError")
+     * )
+     */
+    public function updateStatus(Request $request, Order $order): JsonResponse
+    {
+        // Operational endpoint - just check if user is authenticated
+        if (!auth()->check()) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:pending,accepted,preparing,ready,served,completed,cancelled',
+        ]);
+
+        $oldStatus = $order->status;
+        $newStatus = $validated['status'];
+
+        // Prevent invalid status transitions (optional business logic)
+        // You can customize this based on your business rules
+        if ($oldStatus === 'completed' || $oldStatus === 'cancelled') {
+            return response()->json([
+                'message' => 'Cannot update status of a completed or cancelled order',
+                'current_status' => $oldStatus
+            ], 422);
+        }
+
+        // Update the order status
+        $order->update([
+            'status' => $newStatus,
+        ]);
+
+        // If order is accepted, create a kitchen ticket
+        if ($newStatus === 'accepted' && !$order->kitchenTicket) {
+            $lastTicket = \App\Models\KitchenTicket::where('restaurant_id', Tenant::id())
+                ->latest('ticket_number')
+                ->first();
+            
+            $nextTicketNumber = $lastTicket ? $lastTicket->ticket_number + 1 : 1;
+            
+            \App\Models\KitchenTicket::create([
+                'restaurant_id' => Tenant::id(),
+                'order_id' => $order->id,
+                'ticket_number' => $nextTicketNumber,
+                'priority' => $order->priority ?? 'normal',
+                'status' => 'pending',
+                'special_instructions' => $order->notes,
+            ]);
+        }
+
+        // If order is completed, mark it as paid if not already
+        if ($newStatus === 'completed') {
+            if (!$order->paid_at) {
+                $order->update(['paid_at' => now()]);
+            }
+
+            $order->refresh();
+
+            if ($order->payment_method && !$order->payments()->exists()) {
+                $this->syncPaymentRecord($order, [
+                    'amount' => $order->total,
+                    'method' => $order->payment_method,
+                    'paid_at' => $order->paid_at,
+                ]);
+            }
+        }
+
+        // If order is cancelled, free up the table
+        if ($newStatus === 'cancelled' && $order->table) {
+            $order->table->update(['status' => 'available']);
+        }
+
+        // Trigger event for status change
+        event(new OrderStatusUpdated($order, $newStatus));
+
+        return response()->json([
+            'message' => 'Order status updated successfully',
+            'order' => $order->fresh(['table', 'waiter', 'orderItems.menuItem']),
+            'previous_status' => $oldStatus,
+            'new_status' => $newStatus,
         ]);
     }
 
@@ -397,6 +739,8 @@ class OrderController extends Controller
                 'quantity' => $item['quantity'],
                 'unit_price' => $menuItem->price,
                 'special_instructions' => $item['special_instructions'] ?? null,
+                'removed_ingredients' => $item['removed_ingredients'] ?? null,
+                'added_extras' => $item['added_extras'] ?? null,
             ]);
         }
 
@@ -411,7 +755,7 @@ class OrderController extends Controller
             'restaurant_id' => $order->restaurant_id,
             'order_id' => $order->id,
             'ticket_number' => $ticketNumber,
-            'priority' => $order->priority,
+            'priority' => $order->priority ?? 'normal',
             'special_instructions' => $order->notes,
         ]);
     }
@@ -425,5 +769,25 @@ class OrderController extends Controller
             'subtotal' => $subtotal,
             'total' => max(0, $total), // Ensure total is not negative
         ]);
+    }
+
+    private function syncPaymentRecord(Order $order, array $payload): ?\App\Models\Payment
+    {
+        $amount = $payload['amount'] ?? $order->total;
+        $method = $payload['method'] ?? $order->payment_method;
+
+        if ($amount === null || $method === null) {
+            return null;
+        }
+
+        return $order->payments()->updateOrCreate(
+            ['order_id' => $order->id],
+            [
+                'amount' => $amount,
+                'method' => $method,
+                'transaction_id' => $payload['transaction_id'] ?? null,
+                'paid_at' => $payload['paid_at'] ?? now(),
+            ]
+        );
     }
 }

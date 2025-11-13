@@ -14,16 +14,8 @@ class UserSeeder extends Seeder
     {
         $restaurants = Restaurant::all();
 
-        // Create SuperAdmin (no restaurant association)
-        $superAdmin = User::create([
-            'name' => 'Super Admin',
-            'email' => 'superadmin@pos.com',
-            'password' => Hash::make('password123'),
-            'email_verified_at' => now(),
-            'restaurant_id' => null,
-        ]);
-        $superAdmin->assignRole('SuperAdmin');
-
+        // SuperAdmin is created by RoleSeeder, so skip it here
+        
         // Create users for each restaurant
         foreach ($restaurants as $restaurant) {
             $this->createUsersForRestaurant($restaurant);

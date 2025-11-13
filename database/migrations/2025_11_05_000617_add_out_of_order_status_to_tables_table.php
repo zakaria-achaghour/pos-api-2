@@ -12,8 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tables', function (Blueprint $table) {
-            $table->enum('shape', ['round', 'square', 'rectangular', 'oval'])->default('rectangular')->after('section');
-            $table->index(['restaurant_id', 'shape']);
+            //
         });
     }
 
@@ -23,8 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('tables', function (Blueprint $table) {
-            $table->dropIndex(['restaurant_id', 'shape']);
-            $table->dropColumn('shape');
+            //
         });
     }
 };

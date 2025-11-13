@@ -4,14 +4,20 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
+use App\Models\User;
 
 class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create permissions
+        // Ensure we always work with fresh permission cache when seeding
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        // Create permissions with guard_name
         $permissions = [
             // Menu management
             'manage-menu',
@@ -48,10 +54,18 @@ class RoleSeeder extends Seeder
             // Super admin permissions
             'manage-all-restaurants',
             'impersonate-users',
+            
+            // Role and permission management
+            'view-roles',
+            'manage-roles',
+            'view-permissions',
+            'manage-permissions',
         ];
 
         foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
+            Permission::firstOrCreate(
+                ['name' => $permission, 'guard_name' => 'api']
+            );
         }
 
         // Create roles with permissions
@@ -77,6 +91,10 @@ class RoleSeeder extends Seeder
                 'view-analytics',
                 'manage-restaurant',
                 'view-restaurant-settings',
+                'view-roles',
+                'manage-roles',
+                'view-permissions',
+                'manage-permissions',
             ],
             
             'Owner' => [
@@ -98,6 +116,7 @@ class RoleSeeder extends Seeder
                 'view-analytics',
                 'manage-restaurant',
                 'view-restaurant-settings',
+                'view-roles', // Need to view roles for staff management
             ],
             
             'Manager' => [
@@ -116,6 +135,7 @@ class RoleSeeder extends Seeder
                 'view-reports',
                 'export-reports',
                 'view-analytics',
+                'view-roles', // Need to view roles for staff management
             ],
             
             'Cashier' => [
@@ -142,9 +162,40 @@ class RoleSeeder extends Seeder
             ],
         ];
 
-        foreach ($roles as $roleName => $permissions) {
-            $role = Role::firstOrCreate(['name' => $roleName]);
-            $role->syncPermissions($permissions);
+        foreach ($roles as $roleName => $rolePermissions) {
+            $role = Role::firstOrCreate(
+                ['name' => $roleName, 'guard_name' => 'api']
+            );
+            $role->syncPermissions($rolePermissions);
+        }
+
+        $this->ensureSuperAdminUserExists();
+    }
+
+    /**
+     * Make sure there is at least one active SuperAdmin account that can log in.
+     */
+    private function ensureSuperAdminUserExists(): void
+    {
+        $email = config('app.super_admin_email', 'superadmin@pos.com');
+        $password = config('app.super_admin_password', 'password123');
+
+        $user = User::firstOrNew(['email' => $email]);
+
+        if (! $user->exists) {
+            $user->fill([
+                'name' => 'Super Admin',
+                'restaurant_id' => null,
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]);
+
+            $user->password = Hash::make($password);
+            $user->save();
+        }
+
+        if (! $user->hasRole('SuperAdmin')) {
+            $user->assignRole('SuperAdmin');
         }
     }
 }
