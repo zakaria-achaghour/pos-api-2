@@ -11,10 +11,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\AttendanceController;
-use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\KitchenController;
-use App\Http\Controllers\Api\TableAnalyticsController;
-use App\Http\Controllers\Api\ScheduleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -60,16 +57,11 @@ Route::middleware(['auth:api','tenant'])->group(function () {
     Route::get('roles', [\App\Http\Controllers\Api\RoleController::class, 'index']);
     Route::get('roles/assignable', [\App\Http\Controllers\Api\RoleController::class, 'assignable']);
 
-    // Table Analytics (must come before table resource routes)
+    // Table utilities (status/resolution)
     Route::prefix('tables')->group(function () {
-        Route::get('analytics', [TableAnalyticsController::class, 'index']);
-        Route::get('occupancy-rates', [TableAnalyticsController::class, 'occupancyRates']);
-        Route::get('revenue-per-table', [TableAnalyticsController::class, 'revenuePerTable']);
-        Route::put('layout', [TableAnalyticsController::class, 'updateLayout']);
         Route::match(['put', 'patch'], '{table}/status', [TableController::class, 'updateStatus']);
         Route::post('{id}/restore', [TableController::class, 'restore']);
         Route::delete('{id}/force', [TableController::class, 'forceDelete']);
-        Route::get('{table}/analytics', [TableAnalyticsController::class, 'show']);
     });
 
     // Basic Resources
@@ -101,11 +93,6 @@ Route::middleware(['auth:api','tenant'])->group(function () {
         Route::get('analytics', [KitchenController::class, 'analytics']);
     });
 
-     // Schedule Management
-    Route::apiResource('schedules', ScheduleController::class);
-    Route::get('schedules/weekly', [ScheduleController::class, 'weekly']);
-    Route::post('schedules/bulk', [ScheduleController::class, 'bulk']);
-
     // Reports
     Route::prefix('reports')->group(function () {
         Route::get('summary', [ReportController::class, 'summary']);
@@ -131,14 +118,6 @@ Route::middleware(['auth:api','tenant'])->group(function () {
         Route::get('reports/summary-pdf', [AttendanceController::class, 'generateSummaryPdf']);
         Route::get('reports/detailed-pdf', [AttendanceController::class, 'generateDetailedPdf']);
     });
-    
-    // Analytics & Dashboard
-    Route::prefix('dashboard')->group(function () {
-        Route::get('metrics', [AnalyticsController::class, 'dashboardMetrics']);
-        Route::get('charts', [AnalyticsController::class, 'salesCharts']);
-        Route::get('top-items', [AnalyticsController::class, 'topItems']);
-    });
-
     
     // Staff Performance (separate from staff resource)
     Route::get('analytics/staff-performance', [StaffController::class, 'performance']);

@@ -486,6 +486,7 @@ class OrderController extends Controller
         ]);
 
         $this->recalculateOrderTotal($order);
+        $order->refresh();
 
         // Update table status if applicable
         if ($order->table) {
@@ -493,6 +494,12 @@ class OrderController extends Controller
         }
 
         event(new OrderStatusUpdated($order, 'completed'));
+
+        $this->syncPaymentRecord($order, [
+            'amount' => $order->total,
+            'method' => $order->payment_method,
+            'paid_at' => $order->paid_at,
+        ]);
 
         return response()->json([
             'message' => 'Order closed successfully',
@@ -587,15 +594,12 @@ class OrderController extends Controller
         }
 
         // Create or update payment record
-        $payment = $order->payments()->updateOrCreate(
-            ['order_id' => $order->id],
-            [
-                'amount' => $validated['amount_received'] ?? $totalWithTip,
-                'method' => $validated['payment_method'],
-                'transaction_id' => $validated['transaction_id'] ?? null,
-                'paid_at' => $validated['payment_status'] === 'completed' ? now() : null,
-            ]
-        );
+        $payment = $this->syncPaymentRecord($order->fresh(), [
+            'amount' => $validated['amount_received'] ?? $totalWithTip,
+            'method' => $validated['payment_method'],
+            'transaction_id' => $validated['transaction_id'] ?? null,
+            'paid_at' => $validated['payment_status'] === 'completed' ? now() : null,
+        ]);
 
         return response()->json([
             'message' => 'Payment updated successfully',
@@ -692,8 +696,20 @@ class OrderController extends Controller
         }
 
         // If order is completed, mark it as paid if not already
-        if ($newStatus === 'completed' && !$order->paid_at) {
-            $order->update(['paid_at' => now()]);
+        if ($newStatus === 'completed') {
+            if (!$order->paid_at) {
+                $order->update(['paid_at' => now()]);
+            }
+
+            $order->refresh();
+
+            if ($order->payment_method && !$order->payments()->exists()) {
+                $this->syncPaymentRecord($order, [
+                    'amount' => $order->total,
+                    'method' => $order->payment_method,
+                    'paid_at' => $order->paid_at,
+                ]);
+            }
         }
 
         // If order is cancelled, free up the table
@@ -753,5 +769,25 @@ class OrderController extends Controller
             'subtotal' => $subtotal,
             'total' => max(0, $total), // Ensure total is not negative
         ]);
+    }
+
+    private function syncPaymentRecord(Order $order, array $payload): ?\App\Models\Payment
+    {
+        $amount = $payload['amount'] ?? $order->total;
+        $method = $payload['method'] ?? $order->payment_method;
+
+        if ($amount === null || $method === null) {
+            return null;
+        }
+
+        return $order->payments()->updateOrCreate(
+            ['order_id' => $order->id],
+            [
+                'amount' => $amount,
+                'method' => $method,
+                'transaction_id' => $payload['transaction_id'] ?? null,
+                'paid_at' => $payload['paid_at'] ?? now(),
+            ]
+        );
     }
 }

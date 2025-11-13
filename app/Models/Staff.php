@@ -58,11 +58,6 @@ class Staff extends Model
         return $this->hasMany(Attendance::class)->whereNull('clock_out')->latest('clock_in');
     }
 
-    public function schedules(): HasMany
-    {
-        return $this->hasMany(Schedule::class);
-    }
-
     public function getFullNameAttribute(): string
     {
         return "{$this->first_name} {$this->last_name}";

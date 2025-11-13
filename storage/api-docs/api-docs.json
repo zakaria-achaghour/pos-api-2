@@ -187,72 +187,341 @@
                 ]
             }
         },
-        "/api/dashboard/metrics": {
+        "/api/admin/permissions": {
             "get": {
                 "tags": [
-                    "Analytics"
+                    "Admin - Permissions"
                 ],
-                "summary": "Get dashboard metrics",
-                "description": "Retrieve key performance metrics for dashboard display",
-                "operationId": "c68a9c1c5b31904b59c97b5acaccca37",
+                "summary": "List all permissions",
+                "description": "Get paginated list of permissions. SuperAdmin only.",
+                "operationId": "b5ad6110f861914da76a5b7534135c59",
                 "parameters": [
                     {
-                        "name": "period",
+                        "name": "search",
                         "in": "query",
-                        "description": "Time period for metrics",
+                        "description": "Search by permission name",
                         "required": false,
                         "schema": {
-                            "type": "string",
-                            "enum": [
-                                "today",
-                                "week",
-                                "month"
-                            ],
-                            "example": "today"
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page (default: all)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Dashboard metrics retrieved successfully",
+                        "description": "Permissions retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "example": "view-menu"
+                                            },
+                                            "guard_name": {
+                                                "type": "string",
+                                                "example": "api"
+                                            },
+                                            "created_at": {
+                                                "type": "string"
+                                            },
+                                            "updated_at": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden - SuperAdmin only"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin - Permissions"
+                ],
+                "summary": "Create a new permission",
+                "description": "Create a new permission. SuperAdmin only.",
+                "operationId": "b00558788c35e411c8c37dbd8359dcf6",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "manage-inventory"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Permission created successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "total_revenue": {
-                                            "type": "number",
-                                            "format": "float",
-                                            "example": 15420.5
-                                        },
-                                        "total_orders": {
+                                        "id": {
                                             "type": "integer",
-                                            "example": 342
+                                            "example": 42
                                         },
-                                        "paid_orders": {
+                                        "name": {
+                                            "type": "string",
+                                            "example": "manage-inventory"
+                                        },
+                                        "guard_name": {
+                                            "type": "string",
+                                            "example": "api"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "403": {
+                        "description": "Forbidden - SuperAdmin only"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/permissions/{id}": {
+            "get": {
+                "tags": [
+                    "Admin - Permissions"
+                ],
+                "summary": "Get a specific permission",
+                "description": "Retrieve details of a specific permission. SuperAdmin only.",
+                "operationId": "c197bd2006f0e4c4f258bf744fe0225d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Permission retrieved successfully"
+                    },
+                    "404": {
+                        "description": "Permission not found"
+                    },
+                    "403": {
+                        "description": "Forbidden - SuperAdmin only"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Admin - Permissions"
+                ],
+                "summary": "Update a permission",
+                "description": "Update permission name. SuperAdmin only.",
+                "operationId": "e6bfdecf4f8dded87623c37d17364f65",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "manage-full-inventory"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Permission updated successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "403": {
+                        "description": "Forbidden - SuperAdmin only"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Admin - Permissions"
+                ],
+                "summary": "Delete a permission",
+                "description": "Delete a permission. SuperAdmin only.",
+                "operationId": "ad0ed66fe663a201ce7aab432468d952",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Permission deleted successfully"
+                    },
+                    "422": {
+                        "description": "Cannot delete - permission is in use"
+                    },
+                    "403": {
+                        "description": "Forbidden - SuperAdmin only"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/roles": {
+            "get": {
+                "tags": [
+                    "Admin - Roles"
+                ],
+                "summary": "List all roles",
+                "description": "Get paginated list of roles with permissions and user counts. SuperAdmin only.",
+                "operationId": "2bb27e1762596951f562458056beb02e",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by role name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Roles retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "current_page": {
                                             "type": "integer",
-                                            "example": 320
+                                            "example": 1
                                         },
-                                        "cancelled_orders": {
-                                            "type": "integer",
-                                            "example": 22
-                                        },
-                                        "average_order_value": {
-                                            "type": "number",
-                                            "format": "float",
-                                            "example": 45.12
-                                        },
-                                        "active_staff": {
-                                            "type": "integer",
-                                            "example": 8
-                                        },
-                                        "occupied_tables": {
-                                            "type": "integer",
-                                            "example": 12
-                                        },
-                                        "table_turnover_rate": {
-                                            "type": "number",
-                                            "format": "float",
-                                            "example": 2.3
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 7
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Inventory Manager"
+                                                    },
+                                                    "guard_name": {
+                                                        "type": "string",
+                                                        "example": "api"
+                                                    },
+                                                    "permissions": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "users_count": {
+                                                        "type": "integer",
+                                                        "example": 4
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string"
+                                                    },
+                                                    "updated_at": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
                                         }
                                     },
                                     "type": "object"
@@ -261,19 +530,292 @@
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden - SuperAdmin only"
                     }
                 },
                 "security": [
                     {
-                        "bearer_token": []
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin - Roles"
+                ],
+                "summary": "Create a new role",
+                "description": "Create a new role with permissions. SuperAdmin only.",
+                "operationId": "9961f633b3e53fc423ceed4d55560b22",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Inventory Manager"
+                                    },
+                                    "permissions": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "example": "view-menu"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Role created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 7
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "example": "Inventory Manager"
+                                        },
+                                        "guard_name": {
+                                            "type": "string",
+                                            "example": "api"
+                                        },
+                                        "permissions": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "users_count": {
+                                            "type": "integer",
+                                            "example": 0
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "403": {
+                        "description": "Forbidden - SuperAdmin only"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/roles/{id}": {
+            "get": {
+                "tags": [
+                    "Admin - Roles"
+                ],
+                "summary": "Get a specific role",
+                "description": "Retrieve details of a specific role. SuperAdmin only.",
+                "operationId": "e1f8e6eef9af9ef58ec213260728c737",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role retrieved successfully"
+                    },
+                    "404": {
+                        "description": "Role not found"
+                    },
+                    "403": {
+                        "description": "Forbidden - SuperAdmin only"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Admin - Roles"
+                ],
+                "summary": "Update a role",
+                "description": "Update role name and permissions. Cannot update SuperAdmin role. SuperAdmin only.",
+                "operationId": "1072b47020d073e63bdfe79e2af1fa05",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Senior Manager"
+                                    },
+                                    "permissions": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Role updated successfully"
+                    },
+                    "422": {
+                        "description": "Validation error or cannot update SuperAdmin"
+                    },
+                    "403": {
+                        "description": "Forbidden - SuperAdmin only"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Admin - Roles"
+                ],
+                "summary": "Delete a role",
+                "description": "Delete a role. Cannot delete SuperAdmin or roles with assigned users. SuperAdmin only.",
+                "operationId": "b3353788534fc609413d6488dfb52807",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role deleted successfully"
+                    },
+                    "422": {
+                        "description": "Cannot delete - role has users or is SuperAdmin"
+                    },
+                    "403": {
+                        "description": "Forbidden - SuperAdmin only"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/roles/{id}/users": {
+            "get": {
+                "tags": [
+                    "Admin - Roles"
+                ],
+                "summary": "Get users with a specific role",
+                "description": "List all users assigned to a role. SuperAdmin only.",
+                "operationId": "1b7384010029b321510fb33a2d6c74fd",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Users retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "role": {
+                                            "type": "string",
+                                            "example": "Manager"
+                                        },
+                                        "users_count": {
+                                            "type": "integer",
+                                            "example": 4
+                                        },
+                                        "users": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "email": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Role not found"
+                    },
+                    "403": {
+                        "description": "Forbidden - SuperAdmin only"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
                     }
                 ]
             }
@@ -1592,7 +2134,7 @@
                     "Kitchen Management"
                 ],
                 "summary": "Get kitchen tickets",
-                "description": "Retrieve list of kitchen tickets with optional filtering",
+                "description": "Retrieve list of kitchen tickets with optional filtering and pagination",
                 "operationId": "168324457dc2f962053838c1e50df673",
                 "parameters": [
                     {
@@ -1605,7 +2147,8 @@
                             "enum": [
                                 "pending",
                                 "preparing",
-                                "ready"
+                                "ready",
+                                "served"
                             ]
                         }
                     },
@@ -1632,6 +2175,61 @@
                             "type": "string",
                             "example": "Grill Station"
                         }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "description": "Filter by specific date (YYYY-MM-DD format)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2025-11-10"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Filter from date (YYYY-MM-DD format)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2025-11-01"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Filter to date (YYYY-MM-DD format)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2025-11-10"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15,
+                            "example": 20
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "example": 1
+                        }
                     }
                 ],
                 "responses": {
@@ -1640,10 +2238,51 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/KitchenTicket"
-                                    }
+                                    "properties": {
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/KitchenTicket"
+                                            }
+                                        },
+                                        "first_page_url": {
+                                            "type": "string"
+                                        },
+                                        "from": {
+                                            "type": "integer"
+                                        },
+                                        "last_page": {
+                                            "type": "integer"
+                                        },
+                                        "last_page_url": {
+                                            "type": "string"
+                                        },
+                                        "next_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        },
+                                        "per_page": {
+                                            "type": "integer"
+                                        },
+                                        "prev_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "to": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }
@@ -1823,7 +2462,7 @@
                     "Kitchen Management"
                 ],
                 "summary": "Start ticket preparation",
-                "description": "Mark a kitchen ticket as started and update order status to preparing",
+                "description": "Mark a kitchen ticket as started and update order status to preparing. Automatically assigns the ticket to the authenticated user (chef) who starts it.",
                 "operationId": "0b34bba76a7e256b5c1c5f342a238bba",
                 "parameters": [
                     {
@@ -1838,7 +2477,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Order preparation started",
+                        "description": "Order preparation started and ticket assigned to current user",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1925,6 +2564,73 @@
                     },
                     "422": {
                         "description": "Ticket cannot be completed in current status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/kitchen/tickets/{kitchenTicket}/serve": {
+            "post": {
+                "tags": [
+                    "Kitchen Management"
+                ],
+                "summary": "Mark ticket as served",
+                "description": "Mark a kitchen ticket as served when food has been delivered to customer",
+                "operationId": "e48511d508419edacbb23841fd046981",
+                "parameters": [
+                    {
+                        "name": "kitchenTicket",
+                        "in": "path",
+                        "description": "Kitchen ticket ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order marked as served",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Order has been served"
+                                        },
+                                        "ticket": {
+                                            "$ref": "#/components/schemas/KitchenTicket"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Ticket cannot be served in current status",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2872,6 +3578,116 @@
                 ]
             }
         },
+        "/api/orders/{order}": {
+            "put": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Update an order",
+                "description": "Update order details such as waiter, type, status, priority, or notes",
+                "operationId": "451beac48796437035c70268bc39ee41",
+                "parameters": [
+                    {
+                        "name": "order",
+                        "in": "path",
+                        "description": "Order ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 286
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "waiter_id": {
+                                        "description": "ID of the assigned waiter",
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "dine-in",
+                                            "takeout",
+                                            "delivery"
+                                        ],
+                                        "example": "dine-in"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "pending",
+                                            "accepted",
+                                            "preparing",
+                                            "ready",
+                                            "served",
+                                            "completed",
+                                            "cancelled"
+                                        ],
+                                        "example": "accepted"
+                                    },
+                                    "priority": {
+                                        "type": "string",
+                                        "enum": [
+                                            "normal",
+                                            "rush",
+                                            "urgent"
+                                        ],
+                                        "example": "normal"
+                                    },
+                                    "notes": {
+                                        "description": "Order notes or special instructions",
+                                        "type": "string",
+                                        "example": "Customer has allergies"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Order updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Order updated successfully"
+                                        },
+                                        "order": {
+                                            "$ref": "#/components/schemas/Order"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
         "/api/orders/{id}/items": {
             "post": {
                 "tags": [
@@ -2966,6 +3782,234 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/orders/{order}/payment": {
+            "patch": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Update payment information for an order",
+                "description": "Update payment details including payment method, status, amount received, and tip",
+                "operationId": "0ea847a89703eecbfee33230313fcea7",
+                "parameters": [
+                    {
+                        "name": "order",
+                        "in": "path",
+                        "description": "Order ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "payment_method",
+                                    "payment_status"
+                                ],
+                                "properties": {
+                                    "payment_method": {
+                                        "type": "string",
+                                        "enum": [
+                                            "cash",
+                                            "card",
+                                            "mobile"
+                                        ],
+                                        "example": "cash"
+                                    },
+                                    "payment_status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "pending",
+                                            "completed",
+                                            "failed",
+                                            "refunded"
+                                        ],
+                                        "example": "completed"
+                                    },
+                                    "amount_received": {
+                                        "description": "Amount received from customer",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 500
+                                    },
+                                    "tip_amount": {
+                                        "description": "Tip amount",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 13.52
+                                    },
+                                    "transaction_id": {
+                                        "description": "Payment transaction ID",
+                                        "type": "string",
+                                        "example": "TXN123456"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Payment updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Payment updated successfully"
+                                        },
+                                        "order": {
+                                            "$ref": "#/components/schemas/Order"
+                                        },
+                                        "payment": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "order_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "amount": {
+                                                    "type": "number",
+                                                    "example": 500
+                                                },
+                                                "method": {
+                                                    "type": "string",
+                                                    "example": "cash"
+                                                },
+                                                "transaction_id": {
+                                                    "type": "string",
+                                                    "example": "TXN123456"
+                                                },
+                                                "paid_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2024-01-15T10:30:00Z"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
+            }
+        },
+        "/api/orders/{order}/status": {
+            "patch": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Update order status",
+                "description": "Update the status of an order. When status changes to 'accepted', a kitchen ticket is automatically created for the order if it doesn't already have one.",
+                "operationId": "186761e4638080314ffcc09ee265e4b2",
+                "parameters": [
+                    {
+                        "name": "order",
+                        "in": "path",
+                        "description": "Order ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 286
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "description": "New status for the order. Setting status to 'accepted' automatically creates a kitchen ticket.",
+                                        "type": "string",
+                                        "enum": [
+                                            "pending",
+                                            "accepted",
+                                            "preparing",
+                                            "ready",
+                                            "served",
+                                            "completed",
+                                            "cancelled"
+                                        ],
+                                        "example": "accepted"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Order status updated successfully. If status was changed to 'accepted', a kitchen ticket has been created automatically.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Order status updated successfully"
+                                        },
+                                        "order": {
+                                            "$ref": "#/components/schemas/Order"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
                     }
                 },
                 "security": [
@@ -3074,70 +4118,96 @@
                 ]
             }
         },
-        "/api/schedules": {
+        "/api/roles/assignable": {
             "get": {
                 "tags": [
-                    "Schedules"
+                    "Roles"
                 ],
-                "summary": "Get staff schedules",
-                "description": "Retrieve paginated list of staff schedules with optional filtering",
-                "operationId": "f21805e74c0fcc7937d0464ff67212bd",
-                "parameters": [
-                    {
-                        "name": "staff_id",
-                        "in": "query",
-                        "description": "Filter by staff member ID",
-                        "required": false,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "date_from",
-                        "in": "query",
-                        "description": "Filter schedules from this date",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "format": "date"
-                        }
-                    },
-                    {
-                        "name": "date_to",
-                        "in": "query",
-                        "description": "Filter schedules until this date",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "format": "date"
-                        }
-                    }
-                ],
+                "summary": "Get assignable roles",
+                "description": "Get list of roles that can be assigned to staff (excludes Owner and SuperAdmin)",
+                "operationId": "getAssignableRoles",
                 "responses": {
                     "200": {
-                        "description": "Schedules retrieved successfully",
+                        "description": "List of assignable roles",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PaginatedResponse"
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 3
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "example": "Manager"
+                                            },
+                                            "guard_name": {
+                                                "type": "string",
+                                                "example": "api"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
                                 }
                             }
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
+                        "description": "Unauthenticated"
                     }
                 },
                 "security": [
                     {
-                        "bearer_token": []
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/roles": {
+            "get": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Get all roles",
+                "description": "Get list of all roles for filtering and display purposes",
+                "operationId": "getAllRoles",
+                "responses": {
+                    "200": {
+                        "description": "List of all roles",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "example": "SuperAdmin"
+                                            },
+                                            "guard_name": {
+                                                "type": "string",
+                                                "example": "api"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
                     }
                 ]
             }
@@ -3293,6 +4363,37 @@
                                                         },
                                                         "type": "object",
                                                         "nullable": true
+                                                    },
+                                                    "active_attendance": {
+                                                        "description": "Current active attendance record (clock-in without clock-out)",
+                                                        "type": "array",
+                                                        "items": {
+                                                            "properties": {
+                                                                "id": {
+                                                                    "type": "integer",
+                                                                    "example": 42
+                                                                },
+                                                                "staff_id": {
+                                                                    "type": "integer",
+                                                                    "example": 1
+                                                                },
+                                                                "restaurant_id": {
+                                                                    "type": "integer",
+                                                                    "example": 1
+                                                                },
+                                                                "clock_in": {
+                                                                    "type": "string",
+                                                                    "format": "datetime",
+                                                                    "example": "2025-11-11T08:30:00.000000Z"
+                                                                },
+                                                                "clock_out": {
+                                                                    "type": "string",
+                                                                    "example": null,
+                                                                    "nullable": true
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
                                                     }
                                                 },
                                                 "type": "object"
@@ -3668,394 +4769,6 @@
                 "security": [
                     {
                         "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/api/tables/analytics": {
-            "get": {
-                "tags": [
-                    "Table Analytics"
-                ],
-                "summary": "Get table analytics",
-                "description": "Retrieve analytics data for all tables including occupancy and revenue metrics",
-                "operationId": "d93d4dadd2210217e3a076f08b463af5",
-                "parameters": [
-                    {
-                        "name": "period",
-                        "in": "query",
-                        "description": "Time period for analytics",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "today",
-                                "week",
-                                "month"
-                            ],
-                            "example": "today"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Table analytics retrieved successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "properties": {
-                                            "table_id": {
-                                                "type": "integer"
-                                            },
-                                            "table_number": {
-                                                "type": "string"
-                                            },
-                                            "total_revenue": {
-                                                "type": "number",
-                                                "format": "float"
-                                            },
-                                            "total_orders": {
-                                                "type": "integer"
-                                            },
-                                            "occupancy_rate": {
-                                                "type": "number",
-                                                "format": "float"
-                                            },
-                                            "average_order_value": {
-                                                "type": "number",
-                                                "format": "float"
-                                            }
-                                        },
-                                        "type": "object"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearer_token": []
-                    }
-                ]
-            }
-        },
-        "/api/tables/{table}/analytics": {
-            "get": {
-                "tags": [
-                    "Table Analytics"
-                ],
-                "summary": "Get analytics for specific table",
-                "description": "Retrieve detailed analytics data for a specific table",
-                "operationId": "7044ae45a2af9344cf44d87c661dd73b",
-                "parameters": [
-                    {
-                        "name": "table",
-                        "in": "path",
-                        "description": "Table ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "period",
-                        "in": "query",
-                        "description": "Time period for analytics",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "today",
-                                "week",
-                                "month"
-                            ],
-                            "example": "week"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Table analytics retrieved successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "table": {
-                                            "$ref": "#/components/schemas/Table"
-                                        },
-                                        "analytics": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object"
-                                            }
-                                        },
-                                        "daily_orders": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object"
-                                            }
-                                        },
-                                        "summary": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Table not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearer_token": []
-                    }
-                ]
-            }
-        },
-        "/api/tables/occupancy-rates": {
-            "get": {
-                "tags": [
-                    "Table Analytics"
-                ],
-                "summary": "Get table occupancy rates",
-                "description": "Retrieve occupancy rates for all tables",
-                "operationId": "c49d081e6617a8cdad9028950539e012",
-                "parameters": [
-                    {
-                        "name": "period",
-                        "in": "query",
-                        "description": "Time period for analytics",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "today",
-                                "week",
-                                "month"
-                            ],
-                            "example": "today"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Table occupancy rates retrieved successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "properties": {
-                                            "table_id": {
-                                                "type": "integer"
-                                            },
-                                            "table_number": {
-                                                "type": "string"
-                                            },
-                                            "capacity": {
-                                                "type": "integer"
-                                            },
-                                            "status": {
-                                                "type": "string"
-                                            },
-                                            "orders_count": {
-                                                "type": "integer"
-                                            },
-                                            "revenue": {
-                                                "type": "number",
-                                                "format": "float"
-                                            },
-                                            "occupancy_rate": {
-                                                "type": "number",
-                                                "format": "float"
-                                            },
-                                            "last_occupied": {
-                                                "type": "string",
-                                                "format": "date-time",
-                                                "nullable": true
-                                            }
-                                        },
-                                        "type": "object"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearer_token": []
-                    }
-                ]
-            }
-        },
-        "/api/tables/revenue-per-table": {
-            "get": {
-                "tags": [
-                    "Table Analytics"
-                ],
-                "summary": "Get revenue per table",
-                "description": "Retrieve revenue analytics grouped by table",
-                "operationId": "7674aa9e63f8204c5ccdb2ec02cbe42e",
-                "parameters": [
-                    {
-                        "name": "period",
-                        "in": "query",
-                        "description": "Time period for analytics",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "today",
-                                "week",
-                                "month"
-                            ],
-                            "example": "today"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Revenue per table retrieved successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "properties": {
-                                            "table_id": {
-                                                "type": "integer"
-                                            },
-                                            "table_number": {
-                                                "type": "string"
-                                            },
-                                            "capacity": {
-                                                "type": "integer"
-                                            },
-                                            "order_count": {
-                                                "type": "integer"
-                                            },
-                                            "total_revenue": {
-                                                "type": "number",
-                                                "format": "float"
-                                            },
-                                            "average_order_value": {
-                                                "type": "number",
-                                                "format": "float"
-                                            },
-                                            "revenue_per_seat": {
-                                                "type": "number",
-                                                "format": "float"
-                                            }
-                                        },
-                                        "type": "object"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearer_token": []
-                    }
-                ]
-            }
-        },
-        "/api/tables/layout": {
-            "put": {
-                "tags": [
-                    "Table Analytics"
-                ],
-                "summary": "Update table layout",
-                "description": "Update the grid positions of tables for layout management",
-                "operationId": "87dfa20e89442f8fa8d32c17e9f19a35",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "tables": {
-                                        "type": "array",
-                                        "items": {
-                                            "properties": {
-                                                "id": {
-                                                    "description": "Table ID",
-                                                    "type": "integer"
-                                                },
-                                                "grid_x": {
-                                                    "description": "X coordinate in grid",
-                                                    "type": "integer"
-                                                },
-                                                "grid_y": {
-                                                    "description": "Y coordinate in grid",
-                                                    "type": "integer"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Table layout updated successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Table layout updated successfully"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearer_token": []
                     }
                 ]
             }
@@ -5182,115 +5895,6 @@
                 },
                 "type": "object"
             },
-            "Schedule": {
-                "properties": {
-                    "id": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "staff_id": {
-                        "type": "integer",
-                        "example": 5
-                    },
-                    "date": {
-                        "type": "string",
-                        "format": "date",
-                        "example": "2024-01-15"
-                    },
-                    "start_time": {
-                        "type": "string",
-                        "format": "time",
-                        "example": "09:00:00"
-                    },
-                    "end_time": {
-                        "type": "string",
-                        "format": "time",
-                        "example": "17:00:00"
-                    },
-                    "shift_type": {
-                        "type": "string",
-                        "enum": [
-                            "morning",
-                            "afternoon",
-                            "evening",
-                            "night"
-                        ],
-                        "example": "morning"
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "scheduled",
-                            "confirmed",
-                            "cancelled"
-                        ],
-                        "example": "scheduled"
-                    },
-                    "notes": {
-                        "type": "string",
-                        "example": "Training shift"
-                    },
-                    "restaurant_id": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "updated_at": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "staff": {
-                        "$ref": "#/components/schemas/Staff"
-                    }
-                },
-                "type": "object"
-            },
-            "Analytics": {
-                "properties": {
-                    "total_sales": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 15420.5
-                    },
-                    "total_orders": {
-                        "type": "integer",
-                        "example": 342
-                    },
-                    "average_order_value": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 45.12
-                    },
-                    "peak_hours": {
-                        "type": "array",
-                        "items": {
-                            "type": "integer"
-                        },
-                        "example": [
-                            12,
-                            13,
-                            19,
-                            20
-                        ]
-                    },
-                    "top_items": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/MenuItem"
-                        }
-                    },
-                    "staff_performance": {
-                        "type": "array",
-                        "items": {
-                            "type": "object"
-                        }
-                    }
-                },
-                "type": "object"
-            },
             "Category": {
                 "title": "Category",
                 "description": "Menu category model",
@@ -5340,6 +5944,75 @@
                 "type": "object"
             }
         },
+        "responses": {
+            "Unauthorized": {
+                "description": "Unauthenticated - Invalid or missing token",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "Unauthenticated."
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "Forbidden": {
+                "description": "Forbidden - User does not have permission",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "User does not have the right roles."
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "NotFound": {
+                "description": "Resource not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "Resource not found"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "ValidationError": {
+                "description": "Validation error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "The given data was invalid."
+                                },
+                                "errors": {
+                                    "type": "object"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
         "securitySchemes": {
             "bearer_token": {
                 "type": "http",
@@ -5353,6 +6026,10 @@
         {
             "name": "Orders",
             "description": "Order processing and management"
+        },
+        {
+            "name": "Roles",
+            "description": "Role operations for staff management"
         },
         {
             "name": "Tables",
@@ -5383,20 +6060,16 @@
             "description": "Staff attendance tracking and reporting"
         },
         {
-            "name": "Schedules",
-            "description": "Staff scheduling and shift management"
-        },
-        {
             "name": "Reports",
             "description": "Business reporting and analytics"
         },
         {
-            "name": "Analytics",
-            "description": "Dashboard metrics and analytics"
+            "name": "Admin - Permissions",
+            "description": "Admin - Permissions"
         },
         {
-            "name": "Table Analytics",
-            "description": "Table-specific analytics and metrics"
+            "name": "Admin - Roles",
+            "description": "Admin - Roles"
         },
         {
             "name": "Categories",
