@@ -484,6 +484,7 @@ class OrderController extends Controller
             'discount_amount' => $request->discount_amount ?? 0,
             'tax_amount' => $request->tax_amount ?? 0,
             'paid_at' => now(),
+            'paid_by' => auth()->id(),
         ]);
 
         $this->recalculateOrderTotal($order);
@@ -584,6 +585,7 @@ class OrderController extends Controller
             $order->update([
                 'status' => 'completed',
                 'paid_at' => now(),
+                'paid_by' => auth()->id(),
             ]);
 
             // Update table status if applicable
@@ -822,12 +824,21 @@ class OrderController extends Controller
 
     private function recalculateOrderTotal(Order $order): void
     {
+        $order->loadMissing('restaurant');
         $subtotal = $order->orderItems()->sum(DB::raw('quantity * unit_price'));
-        $total = $subtotal + $order->tax_amount - $order->discount_amount;
+        $discount = $order->discount_amount ?? 0;
+
+        $taxRate = $order->restaurant?->tax_rate ?? 0;
+        $serviceRate = $order->restaurant?->service_charge_rate ?? 0;
+
+        $taxAmount = round($subtotal * ($taxRate / 100), 2);
+        $serviceChargeAmount = round($subtotal * ($serviceRate / 100), 2);
         
         $order->update([
             'subtotal' => $subtotal,
-            'total' => max(0, $total), // Ensure total is not negative
+            'tax_amount' => $taxAmount,
+            'service_charge_amount' => $serviceChargeAmount,
+            'total' => max(0, $subtotal + $taxAmount + $serviceChargeAmount - $discount),
         ]);
     }
 

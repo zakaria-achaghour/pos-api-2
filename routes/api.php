@@ -12,6 +12,9 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\KitchenController;
+use App\Http\Controllers\Api\CashierShiftController;
+use App\Http\Controllers\Api\CashierDashboardController;
+use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -93,6 +96,19 @@ Route::middleware(['auth:api','tenant'])->group(function () {
     Route::post('orders/{order}/close', [OrderController::class,'close']);
     Route::patch('orders/{order}/payment', [OrderController::class,'updatePayment']);
     Route::patch('orders/{order}/status', [OrderController::class,'updateStatus']);
+
+    Route::prefix('cashier')
+        ->middleware('permission:manage-payments')
+        ->group(function () {
+            Route::get('shifts/current', [CashierShiftController::class, 'current']);
+            Route::post('shifts/open', [CashierShiftController::class, 'open']);
+            Route::post('shifts/close', [CashierShiftController::class, 'close']);
+
+            Route::get('dashboard/today', [CashierDashboardController::class, 'today']);
+        });
+
+    Route::get('dashboard/overview', [DashboardController::class, 'overview'])
+        ->middleware('role:Owner|Manager|SuperAdmin');
 
     // Kitchen Management
     Route::prefix('kitchen')->group(function () {
