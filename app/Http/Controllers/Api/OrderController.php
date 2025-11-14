@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Infrastructure\Tenancy\Tenant;
 use App\Events\OrderStatusUpdated;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -726,6 +727,65 @@ class OrderController extends Controller
             'previous_status' => $oldStatus,
             'new_status' => $newStatus,
         ]);
+    }
+
+    /**
+     * Provide a printable receipt (HTML or PDF) for the given order.
+     */
+    public function receipt(Request $request, Order $order)
+    {
+        if (!auth()->check()) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $user = auth()->user();
+        $tenantId = Tenant::id();
+
+        if ($tenantId && $order->restaurant_id !== $tenantId && !$user->hasRole('SuperAdmin')) {
+            abort(404);
+        }
+
+        $order->loadMissing([
+            'restaurant',
+            'table',
+            'waiter',
+            'orderItems.menuItem',
+        ]);
+
+        $restaurant = $order->restaurant;
+        $company = [
+            'name' => $restaurant->name ?? config('app.name', 'Restaurant'),
+            'address' => collect([
+                $restaurant->address ?? null,
+                $restaurant->city ?? null,
+                $restaurant->country ?? null,
+            ])->filter()->implode(', '),
+            'phone' => $restaurant->phone ?? null,
+            'logo' => $restaurant->logo_url ?? null,
+        ];
+
+        $data = [
+            'order' => $order,
+            'company' => $company,
+            'tableLabel' => $order->table?->number
+                ? 'Table ' . $order->table->number
+                : ($order->type ? ucfirst($order->type) : 'Takeaway'),
+            'printedAt' => now()->setTimezone($restaurant->timezone ?? config('app.timezone')),
+            'currency' => $restaurant->currency ?? 'USD',
+            'taxAmount' => (float) ($order->tax_amount ?? 0),
+            'serviceCharge' => (float) data_get($order, 'service_charge_amount', $restaurant->service_charge ?? 0),
+            'discountAmount' => (float) ($order->discount_amount ?? 0),
+            'autoPrint' => $request->boolean('auto_print'),
+        ];
+
+        if ($request->get('format') === 'pdf') {
+            $pdf = Pdf::loadView('receipts.default', $data);
+            $filename = sprintf('receipt-%s.pdf', $order->order_number ?? $order->id);
+
+            return $pdf->stream($filename, ['Attachment' => false]);
+        }
+
+        return response()->view('receipts.default', $data);
     }
 
     private function addItemsToOrder(Order $order, array $items): void

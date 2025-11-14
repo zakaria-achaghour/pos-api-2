@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 
 // ---------- AUTH ----------
 Route::post('/register', [AuthController::class, 'register']); // optional
-Route::post('/login',    [AuthController::class, 'login']);
+Route::post('/login',    [AuthController::class, 'login'])->name('login');
 Route::post('/refresh',  [AuthController::class, 'refresh'])->middleware('auth:api');
 Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:api');
 
@@ -135,3 +135,6 @@ Route::middleware(['auth:api','tenant'])->group(function () {
     // Staff Performance (separate from staff resource)
     Route::get('analytics/staff-performance', [StaffController::class, 'performance']);
 });
+
+// Receipt download - Uses optional web auth (handled in controller)
+Route::get('orders/{order}/receipt', [OrderController::class, 'receipt'])->name('orders.receipt');
