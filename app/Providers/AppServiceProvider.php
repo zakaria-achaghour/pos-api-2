@@ -7,6 +7,7 @@ use App\Observers\OrderItemObserver;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Infrastructure\Tenancy\Tenant;
+use Monolog\LogRecord;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,8 +28,13 @@ class AppServiceProvider extends ServiceProvider
 
         static $registered = false;
         if (!$registered) {
-            Log::getLogger()->pushProcessor(function (array $record) {
-                $record['extra']['tenant_id'] = Tenant::id();
+            Log::getLogger()->pushProcessor(function ($record) {
+                $tenantId = Tenant::id();
+                if ($record instanceof LogRecord) {
+                    $record->extra['tenant_id'] = $tenantId;
+                    return $record;
+                }
+                $record['extra']['tenant_id'] = $tenantId;
                 return $record;
             });
             $registered = true;
