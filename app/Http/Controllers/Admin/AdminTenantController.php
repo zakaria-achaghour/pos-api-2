@@ -374,7 +374,7 @@ class AdminTenantController extends Controller
         $token = JWTAuth::fromUser($user);
         return response()->json([
             'impersonation' => true,
-            'user' => $user->only('id','name','email','restaurant_id'),
+            'user' => $this->transformUserWithBranding($user),
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth('api')->factory()->getTTL() * 60,
