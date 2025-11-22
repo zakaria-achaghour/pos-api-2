@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Infrastructure\Tenancy\Tenant;
 use App\Events\OrderStatusUpdated;
+use App\Models\Table;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 
@@ -172,6 +173,12 @@ class OrderController extends Controller
         
         $order = DB::transaction(function () use ($data) {
             $order = Order::create($data);
+            
+            // Mark table as occupied when order is created
+            if (!empty($data['table_id'])) {
+                Table::where('id', $data['table_id'])
+                    ->update(['status' => 'occupied']);
+            }
             
             // Create kitchen ticket if order has items
             if (!empty($data['items'])) {
