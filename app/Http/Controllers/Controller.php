@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+
 /**
  * @OA\Info(
  *     title="POS System API Documentation",
@@ -277,4 +279,45 @@ namespace App\Http\Controllers;
 abstract class Controller
 {
     use \Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
+    /**
+     * Shape the authenticated user payload with tenant branding metadata.
+     */
+    protected function transformUserWithBranding(User $user, bool $includePermissions = false): array
+    {
+        $user->loadMissing('restaurant');
+        $restaurant = $user->restaurant;
+        $logo = $restaurant?->logo_url ?? $restaurant?->logo ?? null;
+        $slug = $restaurant?->slug ?? $restaurant?->subdomain ?? null;
+
+        $payload = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'restaurant_id' => $user->restaurant_id,
+            'restaurant_name' => $restaurant?->name,
+            'restaurant_logo_url' => $logo,
+            'restaurant_logo' => $logo,
+            'restaurant' => $restaurant
+                ? [
+                    'id' => $restaurant->id,
+                    'name' => $restaurant->name,
+                    'slug' => $slug,
+                    'logo_url' => $logo,
+                    'logo' => $logo,
+                ]
+                : null,
+            'roles' => $user->getRoleNames(),
+        ];
+
+        if ($slug) {
+            $payload['restaurant_slug'] = $slug;
+        }
+
+        if ($includePermissions) {
+            $payload['permissions'] = $user->getAllPermissions()->pluck('name');
+        }
+
+        return $payload;
+    }
 }

@@ -11,11 +11,32 @@ class Order extends Model
     use SetsRestaurant, HasUserTracking;
 
     protected $fillable = [
-        'restaurant_id','table_id','waiter_id','user_id','order_number','type','status','priority','subtotal','tax_amount','discount_amount','total','payment_method','notes','placed_at','paid_at','created_by','updated_by'
+        'restaurant_id',
+        'table_id',
+        'waiter_id',
+        'user_id',
+        'order_number',
+        'type',
+        'status',
+        'priority',
+        'subtotal',
+        'tax_amount',
+        'service_charge_amount',
+        'discount_amount',
+        'total',
+        'payment_method',
+        'notes',
+        'placed_at',
+        'paid_at',
+        'paid_by',
+        'created_by',
+        'updated_by',
     ];
     protected $casts = [
         'placed_at' => 'datetime',
         'closed_at' => 'datetime',
+        'paid_at' => 'datetime',
+        'service_charge_amount' => 'decimal:2',
     ];
 
     public function restaurant(){ return $this->belongsTo(Restaurant::class); }
@@ -24,6 +45,7 @@ class Order extends Model
     public function orderItems(){ return $this->hasMany(OrderItem::class); }
     public function payments()  { return $this->hasMany(Payment::class); }
     public function kitchenTicket(){ return $this->hasOne(KitchenTicket::class); }
+    public function cashier()   { return $this->belongsTo(User::class, 'paid_by'); }
     
     /**
      * Update order status based on order items state

@@ -30,6 +30,7 @@ class StoreMenuItemRequest extends FormRequest
             'is_available'      => ['nullable','boolean'],
             'is_active'         => ['nullable','boolean'],
             'preparation_time'  => ['nullable','integer','min:0'],
+            'image'             => ['nullable','image','mimes:jpeg,png,jpg,gif','max:2048'],
             'image_url'         => ['nullable','string','url','max:500'],
             'allergens'         => ['nullable','array'],
             'ingredients'       => ['nullable','array'],

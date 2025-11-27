@@ -30,6 +30,7 @@ class UpdateMenuItemRequest extends FormRequest
             'is_available'      => ['sometimes','boolean'],
             'is_active'         => ['sometimes','boolean'],
             'preparation_time'  => ['nullable','integer','min:0'],
+            'image'             => ['nullable','image','mimes:jpeg,png,jpg,gif','max:2048'],
             'image_url'         => ['nullable','string','url','max:500'],
             'allergens'         => ['nullable','array'],
             'ingredients'       => ['nullable','array'],

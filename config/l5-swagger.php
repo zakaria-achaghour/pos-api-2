@@ -46,6 +46,10 @@ return [
                 'annotations' => [
                     base_path('app'),
                 ],
+                /*
+                 * Absolute path to location where parsed annotations will be stored
+                 */
+                'docs' => base_path('swagger-docs'),
             ],
         ],
     ],

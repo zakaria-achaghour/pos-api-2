@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\MenuItem;
 use Illuminate\Http\Request;
 use Infrastructure\Tenancy\Tenant;
+use Illuminate\Support\Facades\Storage;
 
 class MenuItemController extends Controller
 {
@@ -171,6 +172,11 @@ class MenuItemController extends Controller
             ->where('restaurant_id', Tenant::id())->exists(), 404
         );
 
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('menu-items', 'public');
+            $data['image_url'] = Storage::url($path);
+        }
+
         return response()->json(MenuItem::create($data), 201);
     }
 
@@ -269,6 +275,17 @@ class MenuItemController extends Controller
                 Category::where('id', $data['category_id'])
                 ->where('restaurant_id', Tenant::id())->exists(), 404
             );
+        }
+
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($item->image_url) {
+                $oldPath = str_replace('/storage/', '', parse_url($item->image_url, PHP_URL_PATH));
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            $path = $request->file('image')->store('menu-items', 'public');
+            $data['image_url'] = Storage::url($path);
         }
 
         $item->update($data);

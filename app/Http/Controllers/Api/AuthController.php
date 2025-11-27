@@ -76,7 +76,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'User registered successfully',
-            'user' => $user->only('id','name','email','restaurant_id'),
+            'user' => $this->transformUserWithBranding($user),
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth('api')->factory()->getTTL() * 60
@@ -193,14 +193,7 @@ class AuthController extends Controller
     public function me(): JsonResponse
     {
         $user = auth('api')->user();
-        return response()->json([
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'restaurant_id' => $user->restaurant_id,
-            'roles' => $user->getRoleNames(),
-            'permissions' => $user->getAllPermissions()->pluck('name')
-        ]);
+        return response()->json($this->transformUserWithBranding($user, true));
     }
 
     /**
@@ -278,13 +271,7 @@ class AuthController extends Controller
             'access_token' => $token,
             'token_type'   => 'bearer',
             'expires_in'   => auth('api')->factory()->getTTL() * 60,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'restaurant_id' => $user->restaurant_id,
-                'roles' => $user->getRoleNames()
-            ]
+            'user' => $this->transformUserWithBranding($user)
         ]);
     }
 }

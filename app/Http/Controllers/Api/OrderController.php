@@ -14,6 +14,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Infrastructure\Tenancy\Tenant;
 use App\Events\OrderStatusUpdated;
+use App\Models\Table;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -171,6 +173,12 @@ class OrderController extends Controller
         
         $order = DB::transaction(function () use ($data) {
             $order = Order::create($data);
+            
+            // Mark table as occupied when order is created
+            if (!empty($data['table_id'])) {
+                Table::where('id', $data['table_id'])
+                    ->update(['status' => 'occupied']);
+            }
             
             // Create kitchen ticket if order has items
             if (!empty($data['items'])) {
@@ -483,6 +491,7 @@ class OrderController extends Controller
             'discount_amount' => $request->discount_amount ?? 0,
             'tax_amount' => $request->tax_amount ?? 0,
             'paid_at' => now(),
+            'paid_by' => auth()->id(),
         ]);
 
         $this->recalculateOrderTotal($order);
@@ -583,6 +592,7 @@ class OrderController extends Controller
             $order->update([
                 'status' => 'completed',
                 'paid_at' => now(),
+                'paid_by' => auth()->id(),
             ]);
 
             // Update table status if applicable
@@ -728,6 +738,65 @@ class OrderController extends Controller
         ]);
     }
 
+    /**
+     * Provide a printable receipt (HTML or PDF) for the given order.
+     */
+    public function receipt(Request $request, Order $order)
+    {
+        if (!auth()->check()) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $user = auth()->user();
+        $tenantId = Tenant::id();
+
+        if ($tenantId && $order->restaurant_id !== $tenantId && !$user->hasRole('SuperAdmin')) {
+            abort(404);
+        }
+
+        $order->loadMissing([
+            'restaurant',
+            'table',
+            'waiter',
+            'orderItems.menuItem',
+        ]);
+
+        $restaurant = $order->restaurant;
+        $company = [
+            'name' => $restaurant->name ?? config('app.name', 'Restaurant'),
+            'address' => collect([
+                $restaurant->address ?? null,
+                $restaurant->city ?? null,
+                $restaurant->country ?? null,
+            ])->filter()->implode(', '),
+            'phone' => $restaurant->phone ?? null,
+            'logo' => $restaurant->logo_url ?? null,
+        ];
+
+        $data = [
+            'order' => $order,
+            'company' => $company,
+            'tableLabel' => $order->table?->number
+                ? 'Table ' . $order->table->number
+                : ($order->type ? ucfirst($order->type) : 'Takeaway'),
+            'printedAt' => now()->setTimezone($restaurant->timezone ?? config('app.timezone')),
+            'currency' => $restaurant->currency ?? 'USD',
+            'taxAmount' => (float) ($order->tax_amount ?? 0),
+            'serviceCharge' => (float) data_get($order, 'service_charge_amount', $restaurant->service_charge ?? 0),
+            'discountAmount' => (float) ($order->discount_amount ?? 0),
+            'autoPrint' => $request->boolean('auto_print'),
+        ];
+
+        if ($request->get('format') === 'pdf') {
+            $pdf = Pdf::loadView('receipts.default', $data);
+            $filename = sprintf('receipt-%s.pdf', $order->order_number ?? $order->id);
+
+            return $pdf->stream($filename, ['Attachment' => false]);
+        }
+
+        return response()->view('receipts.default', $data);
+    }
+
     private function addItemsToOrder(Order $order, array $items): void
     {
         foreach ($items as $item) {
@@ -762,12 +831,21 @@ class OrderController extends Controller
 
     private function recalculateOrderTotal(Order $order): void
     {
+        $order->loadMissing('restaurant');
         $subtotal = $order->orderItems()->sum(DB::raw('quantity * unit_price'));
-        $total = $subtotal + $order->tax_amount - $order->discount_amount;
+        $discount = $order->discount_amount ?? 0;
+
+        $taxRate = $order->restaurant?->tax_rate ?? 0;
+        $serviceRate = $order->restaurant?->service_charge_rate ?? 0;
+
+        $taxAmount = round($subtotal * ($taxRate / 100), 2);
+        $serviceChargeAmount = round($subtotal * ($serviceRate / 100), 2);
         
         $order->update([
             'subtotal' => $subtotal,
-            'total' => max(0, $total), // Ensure total is not negative
+            'tax_amount' => $taxAmount,
+            'service_charge_amount' => $serviceChargeAmount,
+            'total' => max(0, $subtotal + $taxAmount + $serviceChargeAmount - $discount),
         ]);
     }
 

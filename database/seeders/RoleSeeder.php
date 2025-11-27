@@ -46,6 +46,9 @@ class RoleSeeder extends Seeder
             'view-reports',
             'export-reports',
             'view-analytics',
+
+            // Payments
+            'manage-payments',
             
             // Restaurant management
             'manage-restaurant',
@@ -89,6 +92,7 @@ class RoleSeeder extends Seeder
                 'view-reports',
                 'export-reports',
                 'view-analytics',
+                'manage-payments',
                 'manage-restaurant',
                 'view-restaurant-settings',
                 'view-roles',
@@ -114,6 +118,7 @@ class RoleSeeder extends Seeder
                 'view-reports',
                 'export-reports',
                 'view-analytics',
+                'manage-payments',
                 'manage-restaurant',
                 'view-restaurant-settings',
                 'view-roles', // Need to view roles for staff management
@@ -135,6 +140,7 @@ class RoleSeeder extends Seeder
                 'view-reports',
                 'export-reports',
                 'view-analytics',
+                'manage-payments',
                 'view-roles', // Need to view roles for staff management
             ],
             
@@ -144,6 +150,7 @@ class RoleSeeder extends Seeder
                 'view-orders',
                 'update-orders',
                 'view-tables',
+                'manage-payments',
             ],
             
             'Waiter' => [

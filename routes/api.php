@@ -12,12 +12,15 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\KitchenController;
+use App\Http\Controllers\Api\CashierShiftController;
+use App\Http\Controllers\Api\CashierDashboardController;
+use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // ---------- AUTH ----------
 Route::post('/register', [AuthController::class, 'register']); // optional
-Route::post('/login',    [AuthController::class, 'login']);
+Route::post('/login',    [AuthController::class, 'login'])->name('login');
 Route::post('/refresh',  [AuthController::class, 'refresh'])->middleware('auth:api');
 Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:api');
 
@@ -94,6 +97,19 @@ Route::middleware(['auth:api','tenant'])->group(function () {
     Route::patch('orders/{order}/payment', [OrderController::class,'updatePayment']);
     Route::patch('orders/{order}/status', [OrderController::class,'updateStatus']);
 
+    Route::prefix('cashier')
+        ->middleware('permission:manage-payments')
+        ->group(function () {
+            Route::get('shifts/current', [CashierShiftController::class, 'current']);
+            Route::post('shifts/open', [CashierShiftController::class, 'open']);
+            Route::post('shifts/close', [CashierShiftController::class, 'close']);
+
+            Route::get('dashboard/today', [CashierDashboardController::class, 'today']);
+        });
+
+    Route::get('dashboard/overview', [DashboardController::class, 'overview'])
+        ->middleware('role:Owner|Manager|SuperAdmin');
+
     // Kitchen Management
     Route::prefix('kitchen')->group(function () {
         Route::get('tickets', [KitchenController::class, 'index']);
@@ -135,3 +151,6 @@ Route::middleware(['auth:api','tenant'])->group(function () {
     // Staff Performance (separate from staff resource)
     Route::get('analytics/staff-performance', [StaffController::class, 'performance']);
 });
+
+// Receipt download - Uses optional web auth (handled in controller)
+Route::get('orders/{order}/receipt', [OrderController::class, 'receipt'])->name('orders.receipt');
