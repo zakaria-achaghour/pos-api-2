@@ -2,13 +2,15 @@
 
 namespace App\Logging;
 
+use Illuminate\Log\Logger as IlluminateLogger;
 use Infrastructure\Tenancy\Tenant;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 
 class TenantLogTap
 {
-    public function __invoke(Logger $logger): void
+    // Laravel passes taps its own Logger wrapper; it proxies calls to Monolog.
+    public function __invoke(IlluminateLogger $logger): void
     {
         $tenantId = Tenant::id();
         $suffix = $tenantId ? "tenant-{$tenantId}" : 'tenant-global';
