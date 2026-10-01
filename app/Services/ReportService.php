@@ -17,7 +17,7 @@ class ReportService
     public function getSalesReport($startDate, $endDate, $groupBy = 'hour')
     {
         $query = Order::where('restaurant_id', Tenant::id())
-            ->where('status', 'paid')
+            ->where('status', 'completed')
             ->whereBetween('placed_at', [$startDate, $endDate]);
 
         return match($groupBy) {
@@ -74,7 +74,7 @@ class ReportService
     private function getSalesData($startDate, $endDate)
     {
         return Order::where('restaurant_id', Tenant::id())
-            ->where('status', 'paid')
+            ->where('status', 'completed')
             ->whereBetween('placed_at', [$startDate, $endDate])
             ->with(['table', 'waiter'])
             ->get();
@@ -87,7 +87,7 @@ class ReportService
             ->join('menu_items', 'order_items.menu_item_id', '=', 'menu_items.id')
             ->join('categories', 'menu_items.category_id', '=', 'categories.id')
             ->where('orders.restaurant_id', Tenant::id())
-            ->where('orders.status', 'paid')
+            ->where('orders.status', 'completed')
             ->whereBetween('orders.placed_at', [$startDate, $endDate])
             ->select(
                 'menu_items.name',
@@ -113,7 +113,7 @@ class ReportService
 
                 $orders = $staff->assignedOrders()
                     ->whereBetween('placed_at', [$startDate, $endDate])
-                    ->where('status', 'paid')
+                    ->where('status', 'completed')
                     ->get();
 
                 return [

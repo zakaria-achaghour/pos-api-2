@@ -428,7 +428,7 @@ class StaffController extends Controller
 
                 $orders = $member->assignedOrders()
                     ->where('placed_at', '>=', $startDate)
-                    ->where('status', 'paid')
+                    ->where('status', 'completed')
                     ->get();
 
                 return [

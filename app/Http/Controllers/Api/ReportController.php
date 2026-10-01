@@ -138,7 +138,7 @@ class ReportController extends Controller
             ->join('menu_items', 'order_items.menu_item_id', '=', 'menu_items.id')
             ->join('categories', 'menu_items.category_id', '=', 'categories.id')
             ->where('orders.restaurant_id', Tenant::id())
-            ->where('orders.status', 'paid')
+            ->where('orders.status', 'completed')
             ->where('orders.placed_at', '>=', $startDate)
             ->select(
                 'menu_items.id',
@@ -179,7 +179,7 @@ class ReportController extends Controller
 
                 $orders = $staff->assignedOrders()
                     ->where('placed_at', '>=', $startDate)
-                    ->where('status', 'paid')
+                    ->where('status', 'completed')
                     ->get();
 
                 return [
@@ -238,7 +238,7 @@ class ReportController extends Controller
     private function getSalesSummary($startDate, $endDate): array
     {
         $orders = Order::where('restaurant_id', Tenant::id())
-            ->where('status', 'paid')
+            ->where('status', 'completed')
             ->whereBetween('placed_at', [$startDate, $endDate]);
 
         return [
@@ -257,7 +257,7 @@ class ReportController extends Controller
 
         return [
             'total_orders' => $allOrders->clone()->count(),
-            'paid_orders' => $allOrders->clone()->where('status', 'paid')->count(),
+            'paid_orders' => $allOrders->clone()->where('status', 'completed')->count(),
             'cancelled_orders' => $allOrders->clone()->where('status', 'cancelled')->count(),
             'refunded_orders' => $allOrders->clone()->where('status', 'refunded')->count(),
         ];
@@ -285,7 +285,7 @@ class ReportController extends Controller
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('menu_items', 'order_items.menu_item_id', '=', 'menu_items.id')
             ->where('orders.restaurant_id', Tenant::id())
-            ->where('orders.status', 'paid')
+            ->where('orders.status', 'completed')
             ->whereBetween('orders.placed_at', [$startDate, $endDate])
             ->select(
                 'menu_items.name',
@@ -302,7 +302,7 @@ class ReportController extends Controller
     private function getPaymentMethodBreakdown($startDate, $endDate): array
     {
         return Order::where('restaurant_id', Tenant::id())
-            ->where('status', 'paid')
+            ->where('status', 'completed')
             ->whereBetween('placed_at', [$startDate, $endDate])
             ->select('payment_method', DB::raw('SUM(total) as total'), DB::raw('COUNT(*) as count'))
             ->groupBy('payment_method')
