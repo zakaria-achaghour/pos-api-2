@@ -270,9 +270,25 @@ class AuthController extends Controller
      *     )
      * )
      */
-    public function refresh(): JsonResponse
+    public function refresh(Request $request): JsonResponse
     {
-        return $this->respondWithToken(auth('api')->refresh());
+        try {
+            if (! $request->bearerToken()) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+            $guard = auth('api');
+            $token = $guard->setToken($request->bearerToken())->refresh();
+            $guard->forgetUser();
+            $user = $guard->setToken($token)->user();
+            if (! $user || ! $user->is_active) {
+                $guard->setToken($token)->invalidate();
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+
+            return $this->respondWithToken($token);
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $exception) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
     }
 
     protected function respondWithToken($token): JsonResponse

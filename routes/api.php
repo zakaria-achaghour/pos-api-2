@@ -22,7 +22,8 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [AuthController::class, 'register'])
     ->middleware(['auth:api', 'role:SuperAdmin|Owner|Manager']);
 Route::post('/login',    [AuthController::class, 'login'])->name('login');
-Route::post('/refresh',  [AuthController::class, 'refresh'])->middleware('auth:api');
+// The refresh handler validates JWTs itself, including expired tokens within refresh_ttl.
+Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('throttle:30,1');
 Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:api');
 
 Route::prefix('admin')
