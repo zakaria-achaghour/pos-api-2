@@ -35,10 +35,16 @@ class Order extends Model
     ];
     protected $casts = [
         'placed_at' => 'datetime',
-        'closed_at' => 'datetime',
         'paid_at' => 'datetime',
         'service_charge_amount' => 'decimal:2',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Order $order) {
+            $order->placed_at ??= now();
+        });
+    }
 
     public function restaurant(){ return $this->belongsTo(Restaurant::class); }
     public function table()     { return $this->belongsTo(Table::class); }
