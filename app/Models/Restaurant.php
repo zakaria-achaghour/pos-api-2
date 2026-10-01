@@ -28,7 +28,6 @@ class Restaurant extends Model
         'currency',
         'tax_rate',
         'service_charge',
-        'service_charge_rate',
         'opening_time',
         'closing_time',
         'logo_url',
@@ -55,7 +54,7 @@ class Restaurant extends Model
 
     public function users()        { return $this->hasMany(User::class); }
     public function tables()       { return $this->hasMany(Table::class); }
-    public function menuCategories(){ return $this->hasMany(MenuCategory::class); }
+    public function menuCategories(){ return $this->hasMany(Category::class); }
     public function menuItems()    { return $this->hasMany(MenuItem::class); }
     public function orders()       { return $this->hasMany(Order::class); }
 }
