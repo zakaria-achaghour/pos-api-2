@@ -28,7 +28,7 @@ class StaffController extends Controller
      *     tags={"Staff Management"},
      *     summary="List all staff members",
      *     description="Retrieve paginated list of staff members (employee records) for the authenticated restaurant. Each staff member can be linked to a user account for authentication.",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Parameter(
      *         name="status",
      *         in="query",
@@ -163,7 +163,7 @@ class StaffController extends Controller
      *     tags={"Staff Management"},
      *     summary="Create a new staff member",
      *     description="Add a new staff member (employee record) to the restaurant. Optionally link to an existing user account via user_id for authentication.",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -341,7 +341,7 @@ class StaffController extends Controller
      *     tags={"Staff Management"},
      *     summary="Restore a soft-deleted staff member",
      *     description="Restore a previously deleted staff member",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -378,7 +378,7 @@ class StaffController extends Controller
      *     tags={"Staff Management"},
      *     summary="Permanently delete a staff member",
      *     description="Permanently delete a staff member from the database (cannot be undone)",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",

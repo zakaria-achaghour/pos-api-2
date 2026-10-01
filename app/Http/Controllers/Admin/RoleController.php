@@ -26,7 +26,7 @@ class RoleController extends Controller
      *     tags={"Admin - Roles"},
      *     summary="List all roles",
      *     description="Get paginated list of roles with permissions and user counts. SuperAdmin only.",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Parameter(
      *         name="search",
      *         in="query",
@@ -95,7 +95,7 @@ class RoleController extends Controller
      *     tags={"Admin - Roles"},
      *     summary="Create a new role",
      *     description="Create a new role with permissions. SuperAdmin only.",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -157,7 +157,7 @@ class RoleController extends Controller
      *     tags={"Admin - Roles"},
      *     summary="Get a specific role",
      *     description="Retrieve details of a specific role. SuperAdmin only.",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -184,7 +184,7 @@ class RoleController extends Controller
      *     tags={"Admin - Roles"},
      *     summary="Update a role",
      *     description="Update role name and permissions. Cannot update SuperAdmin role. SuperAdmin only.",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -247,7 +247,7 @@ class RoleController extends Controller
      *     tags={"Admin - Roles"},
      *     summary="Delete a role",
      *     description="Delete a role. Cannot delete SuperAdmin or roles with assigned users. SuperAdmin only.",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -305,7 +305,7 @@ class RoleController extends Controller
      *     tags={"Admin - Roles"},
      *     summary="Get users with a specific role",
      *     description="List all users assigned to a role. SuperAdmin only.",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
