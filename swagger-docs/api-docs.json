@@ -182,7 +182,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -258,7 +258,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             },
@@ -322,7 +322,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -358,7 +358,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             },
@@ -408,7 +408,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             },
@@ -442,7 +442,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -538,7 +538,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             },
@@ -619,7 +619,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -655,7 +655,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             },
@@ -711,7 +711,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             },
@@ -745,7 +745,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -815,7 +815,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -1352,7 +1352,7 @@
                     "Authentication"
                 ],
                 "summary": "Register a new user",
-                "description": "Register a new user and assign default Cashier role",
+                "description": "Create a Cashier account. Requires SuperAdmin, Owner or Manager; non-SuperAdmins can only register users in their own restaurant.",
                 "operationId": "8e4e3cb7b46126f4696379d3c7eeb4ad",
                 "requestBody": {
                     "required": true,
@@ -1441,6 +1441,12 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Not allowed to register users for this restaurant"
+                    },
                     "422": {
                         "description": "Validation errors",
                         "content": {
@@ -1460,7 +1466,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearer_token": []
+                    }
+                ]
             }
         },
         "/api/login": {
@@ -1669,7 +1680,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -1718,7 +1729,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -1809,7 +1820,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -3325,6 +3336,32 @@
                 "operationId": "955bb77a45ae173a485fadb8befed93f",
                 "parameters": [
                     {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search ID (including ORD- prefix), notes, table number or menu item name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "mine",
+                        "in": "query",
+                        "description": "Only orders assigned to the authenticated user's staff record",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "description": "Page number",
@@ -3343,6 +3380,7 @@
                         "schema": {
                             "type": "string",
                             "enum": [
+                                "active",
                                 "pending",
                                 "accepted",
                                 "preparing",
@@ -3830,6 +3868,11 @@
                                         ],
                                         "example": "cash"
                                     },
+                                    "discount_amount": {
+                                        "description": "Absolute discount; recalculates order total",
+                                        "type": "number",
+                                        "minimum": 0
+                                    },
                                     "payment_status": {
                                         "type": "string",
                                         "enum": [
@@ -4160,7 +4203,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -4207,7 +4250,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -4452,7 +4495,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             },
@@ -4700,7 +4743,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -4734,7 +4777,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -4768,7 +4811,7 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "bearer_token": []
                     }
                 ]
             }
@@ -5638,7 +5681,12 @@
                 "properties": {
                     "table_id": {
                         "type": "integer",
-                        "example": 1
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "discount_amount": {
+                        "type": "number",
+                        "minimum": 0
                     },
                     "waiter_id": {
                         "type": "integer",
