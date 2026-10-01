@@ -479,36 +479,39 @@ class OrderController extends Controller
             'tax_amount' => 'nullable|numeric|min:0',
         ]);
 
-        if ($order->status !== 'open') {
+        if (in_array($order->status, ['completed', 'cancelled'])) {
             return response()->json([
-                'message' => 'Order cannot be closed in current status'
+                'message' => 'Order cannot be closed in current status',
+                'current_status' => $order->status
             ], 422);
         }
 
-        $order->update([
-            'status' => 'completed',
-            'payment_method' => $request->payment_method,
-            'discount_amount' => $request->discount_amount ?? 0,
-            'tax_amount' => $request->tax_amount ?? 0,
-            'paid_at' => now(),
-            'paid_by' => auth()->id(),
-        ]);
+        DB::transaction(function () use ($request, $order) {
+            $order->update([
+                'status' => 'completed',
+                'payment_method' => $request->payment_method,
+                'discount_amount' => $request->discount_amount ?? 0,
+                'tax_amount' => $request->tax_amount ?? 0,
+                'paid_at' => now(),
+                'paid_by' => auth()->id(),
+            ]);
 
-        $this->recalculateOrderTotal($order);
-        $order->refresh();
+            $this->recalculateOrderTotal($order);
+            $order->refresh();
 
-        // Update table status if applicable
-        if ($order->table) {
-            $order->table->update(['status' => 'available']);
-        }
+            // Update table status if applicable
+            if ($order->table) {
+                $order->table->update(['status' => 'available']);
+            }
+
+            $this->syncPaymentRecord($order, [
+                'amount' => $order->total,
+                'method' => $order->payment_method,
+                'paid_at' => $order->paid_at,
+            ]);
+        });
 
         event(new OrderStatusUpdated($order, 'completed'));
-
-        $this->syncPaymentRecord($order, [
-            'amount' => $order->total,
-            'method' => $order->payment_method,
-            'paid_at' => $order->paid_at,
-        ]);
 
         return response()->json([
             'message' => 'Order closed successfully',
@@ -582,34 +585,38 @@ class OrderController extends Controller
         $tipAmount = $validated['tip_amount'] ?? 0;
         $totalWithTip = $order->total + $tipAmount;
 
-        // Update order payment details
-        $order->update([
-            'payment_method' => $validated['payment_method'],
-        ]);
-
-        // If payment status is completed, mark order as paid
-        if ($validated['payment_status'] === 'completed') {
+        $payment = DB::transaction(function () use ($validated, $order, $totalWithTip) {
+            // Update order payment details
             $order->update([
-                'status' => 'completed',
-                'paid_at' => now(),
-                'paid_by' => auth()->id(),
+                'payment_method' => $validated['payment_method'],
             ]);
 
-            // Update table status if applicable
-            if ($order->table) {
-                $order->table->update(['status' => 'available']);
+            // If payment status is completed, mark order as paid
+            if ($validated['payment_status'] === 'completed') {
+                $order->update([
+                    'status' => 'completed',
+                    'paid_at' => now(),
+                    'paid_by' => auth()->id(),
+                ]);
+
+                // Update table status if applicable
+                if ($order->table) {
+                    $order->table->update(['status' => 'available']);
+                }
             }
 
+            // Create or update payment record
+            return $this->syncPaymentRecord($order->fresh(), [
+                'amount' => $validated['amount_received'] ?? $totalWithTip,
+                'method' => $validated['payment_method'],
+                'transaction_id' => $validated['transaction_id'] ?? null,
+                'paid_at' => $validated['payment_status'] === 'completed' ? now() : null,
+            ]);
+        });
+
+        if ($validated['payment_status'] === 'completed') {
             event(new OrderStatusUpdated($order, 'completed'));
         }
-
-        // Create or update payment record
-        $payment = $this->syncPaymentRecord($order->fresh(), [
-            'amount' => $validated['amount_received'] ?? $totalWithTip,
-            'method' => $validated['payment_method'],
-            'transaction_id' => $validated['transaction_id'] ?? null,
-            'paid_at' => $validated['payment_status'] === 'completed' ? now() : null,
-        ]);
 
         return response()->json([
             'message' => 'Payment updated successfully',
@@ -689,20 +696,7 @@ class OrderController extends Controller
 
         // If order is accepted, create a kitchen ticket
         if ($newStatus === 'accepted' && !$order->kitchenTicket) {
-            $lastTicket = \App\Models\KitchenTicket::where('restaurant_id', Tenant::id())
-                ->latest('ticket_number')
-                ->first();
-            
-            $nextTicketNumber = $lastTicket ? $lastTicket->ticket_number + 1 : 1;
-            
-            \App\Models\KitchenTicket::create([
-                'restaurant_id' => Tenant::id(),
-                'order_id' => $order->id,
-                'ticket_number' => $nextTicketNumber,
-                'priority' => $order->priority ?? 'normal',
-                'status' => 'pending',
-                'special_instructions' => $order->notes,
-            ]);
+            $this->createKitchenTicket($order);
         }
 
         // If order is completed, mark it as paid if not already
@@ -836,7 +830,7 @@ class OrderController extends Controller
         $discount = $order->discount_amount ?? 0;
 
         $taxRate = $order->restaurant?->tax_rate ?? 0;
-        $serviceRate = $order->restaurant?->service_charge_rate ?? 0;
+        $serviceRate = $order->restaurant?->service_charge ?? 0;
 
         $taxAmount = round($subtotal * ($taxRate / 100), 2);
         $serviceChargeAmount = round($subtotal * ($serviceRate / 100), 2);
