@@ -466,7 +466,10 @@ class KitchenController extends Controller
         }
 
         $kitchenTicket->markAsServed();
-        
+
+        // Update order status to served
+        $kitchenTicket->order->update(['status' => 'served']);
+
         // Update all order items to served state
         $kitchenTicket->order->orderItems()->update(['state' => 'served']);
         
