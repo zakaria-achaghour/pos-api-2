@@ -17,9 +17,10 @@ class CreateOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'table_id' => ['required', Rule::exists('tables', 'id')->where('restaurant_id', Tenant::id())->withoutTrashed()],
+            'table_id' => ['nullable', Rule::exists('tables', 'id')->where('restaurant_id', Tenant::id())->withoutTrashed()],
             'waiter_id' => ['nullable', Rule::exists('staff', 'id')->where('restaurant_id', Tenant::id())->withoutTrashed()],
             'type' => 'nullable|in:dine-in,takeout,delivery',
+            'discount_amount' => 'nullable|numeric|min:0',
             'priority' => 'nullable|in:normal,rush,urgent',
             'notes' => 'nullable|string|max:500',
             'customer_name' => 'nullable|string|max:255',

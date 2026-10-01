@@ -194,7 +194,8 @@ use App\Models\User;
  * @OA\Schema(
  *     schema="CreateOrderRequest",
  *     type="object",
- *     @OA\Property(property="table_id", type="integer", example=1),
+ *     @OA\Property(property="table_id", type="integer", nullable=true, example=1),
+ *     @OA\Property(property="discount_amount", type="number", minimum=0),
  *     @OA\Property(property="waiter_id", type="integer", example=1)
  * )
  * 

@@ -20,6 +20,7 @@ class UpdateOrderRequest extends FormRequest
             'waiter_id' => ['sometimes', Rule::exists('staff', 'id')->where('restaurant_id', Tenant::id())->withoutTrashed()],
             'type' => 'sometimes|in:dine-in,takeout,delivery',
             'status' => 'sometimes|in:pending,accepted,preparing,ready,served,completed,cancelled',
+            'discount_amount' => 'sometimes|numeric|min:0',
             'priority' => 'sometimes|in:normal,rush,urgent',
             'notes' => 'nullable|string|max:500',
         ];
