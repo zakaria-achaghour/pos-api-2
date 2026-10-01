@@ -21,3 +21,19 @@ Manager: manager@golden-fork.com / password123
 ```
 
 Use the Super Admin token for cross-tenant management and the restaurant accounts for daily POS workflows.
+
+### Order workflow updates
+
+Apply the new migrations before deploying the matching frontend:
+
+```bash
+docker compose exec app php artisan migrate
+```
+
+- Orders accept an omitted or null `table_id`. A supplied table must belong to the current restaurant.
+- `discount_amount` is a nonnegative absolute amount supported on create, update, close, and payment. Totals are recalculated on the server; send `0` to remove a discount.
+- `GET /api/orders` supports `search` (ID, notes, table number, menu item name), `status=active`, and `per_page=1..100` before pagination.
+- `mine=1` restricts orders to the authenticated user's staff record. Waiter-created orders automatically use that staff ID when `waiter_id` is omitted.
+- `POST /api/refresh` accepts a bearer JWT within its configured refresh window, including expired access tokens. Invalid, out-of-window, and inactive-account tokens return 401.
+
+The migrations also align payment and table constraints with the existing `mobile` payment method and `out-of-order` table status. Rollback requires first resolving records that use the newly allowed values or null tables; migrations do not rewrite those records.
