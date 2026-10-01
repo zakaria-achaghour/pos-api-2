@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
 use App\Models\Traits\HasUserTracking;
 use App\Models\Traits\SetsRestaurant;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
-    use SetsRestaurant, HasUserTracking;
+    use BelongsToTenant, SetsRestaurant, HasUserTracking;
 
     protected $fillable = [
         'restaurant_id',
