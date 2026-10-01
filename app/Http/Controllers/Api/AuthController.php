@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
@@ -16,7 +17,8 @@ class AuthController extends Controller
      *     path="/api/register",
      *     tags={"Authentication"},
      *     summary="Register a new user",
-     *     description="Register a new user and assign default Cashier role",
+     *     description="Create a Cashier account. Requires SuperAdmin, Owner or Manager; non-SuperAdmins can only register users in their own restaurant.",
+     *     security={{"bearer_token":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -43,6 +45,8 @@ class AuthController extends Controller
      *             @OA\Property(property="expires_in", type="integer", example=7200)
      *         )
      *     ),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Not allowed to register users for this restaurant"),
      *     @OA\Response(
      *         response=422,
      *         description="Validation errors",
@@ -62,6 +66,13 @@ class AuthController extends Controller
             'restaurant_id' => 'required|integer|exists:restaurants,id',
         ]);
 
+        $actor = auth('api')->user();
+        if (! $actor->hasRole('SuperAdmin') && (int) $data['restaurant_id'] !== (int) $actor->restaurant_id) {
+            return response()->json([
+                'message' => 'You can only register users for your own restaurant.'
+            ], 403);
+        }
+
         $user = User::create([
             'name' => $data['name'],
             'email'=> $data['email'],
@@ -72,7 +83,8 @@ class AuthController extends Controller
         // Assign default role
         $user->assignRole('Cashier');
 
-        $token = auth('api')->login($user);
+        // Issue a token for the new account without switching the caller's session
+        $token = JWTAuth::fromUser($user);
 
         return response()->json([
             'message' => 'User registered successfully',

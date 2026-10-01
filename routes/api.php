@@ -19,7 +19,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // ---------- AUTH ----------
-Route::post('/register', [AuthController::class, 'register']); // optional
+Route::post('/register', [AuthController::class, 'register'])
+    ->middleware(['auth:api', 'role:SuperAdmin|Owner|Manager']);
 Route::post('/login',    [AuthController::class, 'login'])->name('login');
 Route::post('/refresh',  [AuthController::class, 'refresh'])->middleware('auth:api');
 Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:api');
