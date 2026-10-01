@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
 use App\Models\Traits\HasUserTracking;
 use App\Models\Traits\SetsRestaurant;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Support\Str;
 
 class Table extends Model
 {
-    use SetsRestaurant, SoftDeletes, HasUserTracking;
+    use BelongsToTenant, SetsRestaurant, SoftDeletes, HasUserTracking;
 
     protected $fillable = [
         'restaurant_id', 

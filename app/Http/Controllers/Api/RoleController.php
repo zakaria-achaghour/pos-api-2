@@ -25,7 +25,7 @@ class RoleController extends Controller
      *     description="Get list of roles that can be assigned to staff (excludes Owner and SuperAdmin)",
      *     operationId="getAssignableRoles",
      *     tags={"Roles"},
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Response(
      *         response=200,
      *         description="List of assignable roles",
@@ -66,7 +66,7 @@ class RoleController extends Controller
      *     description="Get list of all roles for filtering and display purposes",
      *     operationId="getAllRoles",
      *     tags={"Roles"},
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Response(
      *         response=200,
      *         description="List of all roles",

@@ -26,7 +26,7 @@ class PermissionController extends Controller
      *     tags={"Admin - Permissions"},
      *     summary="List all permissions",
      *     description="Get paginated list of permissions. SuperAdmin only.",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Parameter(
      *         name="search",
      *         in="query",
@@ -89,7 +89,7 @@ class PermissionController extends Controller
      *     tags={"Admin - Permissions"},
      *     summary="Create a new permission",
      *     description="Create a new permission. SuperAdmin only.",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -140,7 +140,7 @@ class PermissionController extends Controller
      *     tags={"Admin - Permissions"},
      *     summary="Get a specific permission",
      *     description="Retrieve details of a specific permission. SuperAdmin only.",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -163,7 +163,7 @@ class PermissionController extends Controller
      *     tags={"Admin - Permissions"},
      *     summary="Update a permission",
      *     description="Update permission name. SuperAdmin only.",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -210,7 +210,7 @@ class PermissionController extends Controller
      *     tags={"Admin - Permissions"},
      *     summary="Delete a permission",
      *     description="Delete a permission. SuperAdmin only.",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",

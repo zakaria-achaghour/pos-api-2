@@ -19,9 +19,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // ---------- AUTH ----------
-Route::post('/register', [AuthController::class, 'register']); // optional
+Route::post('/register', [AuthController::class, 'register'])
+    ->middleware(['auth:api', 'role:SuperAdmin|Owner|Manager']);
 Route::post('/login',    [AuthController::class, 'login'])->name('login');
-Route::post('/refresh',  [AuthController::class, 'refresh'])->middleware('auth:api');
+// The refresh handler validates JWTs itself, including expired tokens within refresh_ttl.
+Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('throttle:30,1');
 Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:api');
 
 Route::prefix('admin')
@@ -131,13 +133,8 @@ Route::middleware(['auth:api','tenant'])->group(function () {
         Route::post('export', [ReportController::class, 'export']);
     });
 
-    // Staff Management
-    Route::apiResource('staff', StaffController::class);
-    Route::post('staff/{id}/restore', [StaffController::class, 'restore']);
-    Route::delete('staff/{id}/force', [StaffController::class, 'forceDelete']);
-    Route::get('staff/performance/summary', [StaffController::class, 'performance']);
-    
-    // Attendance Management
+    // Attendance Management (must stay above apiResource('staff') so
+    // "staff/attendance" is not captured by "staff/{staff}")
     Route::prefix('staff/attendance')->group(function () {
         Route::post('clock-in', [AttendanceController::class, 'clockIn']);
         Route::post('clock-out', [AttendanceController::class, 'clockOut']);
@@ -147,7 +144,13 @@ Route::middleware(['auth:api','tenant'])->group(function () {
         Route::get('reports/summary-pdf', [AttendanceController::class, 'generateSummaryPdf']);
         Route::get('reports/detailed-pdf', [AttendanceController::class, 'generateDetailedPdf']);
     });
-    
+
+    // Staff Management
+    Route::get('staff/performance/summary', [StaffController::class, 'performance']);
+    Route::apiResource('staff', StaffController::class);
+    Route::post('staff/{id}/restore', [StaffController::class, 'restore']);
+    Route::delete('staff/{id}/force', [StaffController::class, 'forceDelete']);
+
     // Staff Performance (separate from staff resource)
     Route::get('analytics/staff-performance', [StaffController::class, 'performance']);
 });

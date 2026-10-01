@@ -24,7 +24,7 @@ class AdminTenantController extends Controller
      *     tags={"Admin - Restaurants"},
      *     summary="List all restaurants",
      *     description="Retrieve paginated list of all restaurants (SuperAdmin only)",
-     *     security={{"bearerAuth":{}}},
+     *     security={{"bearer_token":{}}},
      *     @OA\Parameter(
      *         name="search",
      *         in="query",
@@ -278,29 +278,25 @@ class AdminTenantController extends Controller
     }
 
     public function getRestaurantStats(Restaurant $restaurant) {
-        return Tenant::with($restaurant->id, function () {
+        return Tenant::with($restaurant->id, function () use ($restaurant) {
             $today = now()->toDateString();
-            $thisMonth = now()->format('Y-m');
-            
+            $thisMonth = [now()->startOfMonth(), now()->endOfMonth()];
+
             return [
                 'total_orders' => Order::count(),
                 'orders_today' => Order::whereDate('placed_at', $today)->count(),
-                'orders_this_month' => Order::whereDate('placed_at', 'like', $thisMonth.'%')->count(),
-                'total_revenue' => DB::table('payments')
-                    ->join('orders','orders.id','=','payments.order_id')
-                    ->sum('amount'),
-                'revenue_today' => DB::table('payments')
-                    ->join('orders','orders.id','=','payments.order_id')
+                'orders_this_month' => Order::whereBetween('placed_at', $thisMonth)->count(),
+                'total_revenue' => $this->paymentsQuery($restaurant)->sum('payments.amount'),
+                'revenue_today' => $this->paymentsQuery($restaurant)
                     ->whereDate('payments.paid_at', $today)
-                    ->sum('amount'),
-                'revenue_this_month' => DB::table('payments')
-                    ->join('orders','orders.id','=','payments.order_id')
-                    ->whereDate('payments.paid_at', 'like', $thisMonth.'%')
-                    ->sum('amount'),
+                    ->sum('payments.amount'),
+                'revenue_this_month' => $this->paymentsQuery($restaurant)
+                    ->whereBetween('payments.paid_at', $thisMonth)
+                    ->sum('payments.amount'),
                 'total_tables' => Table::count(),
                 'total_menu_items' => MenuItem::count(),
-                'total_staff' => User::count(),
-                'active_staff' => User::whereHas('roles', function($q) {
+                'total_staff' => $restaurant->users()->count(),
+                'active_staff' => $restaurant->users()->whereHas('roles', function($q) {
                     $q->whereIn('name', ['Manager', 'Cashier', 'Waiter', 'Kitchen']);
                 })->count(),
             ];
@@ -308,22 +304,21 @@ class AdminTenantController extends Controller
     }
 
     public function overview(Restaurant $restaurant) {
-        return Tenant::with($restaurant->id, function () {
+        return Tenant::with($restaurant->id, function () use ($restaurant) {
             return [
                 'tables' => Table::count(),
                 'categories' => Category::count(),
                 'items' => MenuItem::count(),
                 'orders_today' => Order::whereDate('placed_at', now()->toDateString())->count(),
-                'sales_today' => DB::table('payments')
-                    ->join('orders','orders.id','=','payments.order_id')
+                'sales_today' => $this->paymentsQuery($restaurant)
                     ->whereDate('payments.paid_at', now()->toDateString())
-                    ->sum('amount'),
+                    ->sum('payments.amount'),
             ];
         });
     }
 
     public function tables(Restaurant $restaurant) {
-        return Tenant::with($restaurant->id, fn() => Table::orderBy('name')->paginate(50));
+        return Tenant::with($restaurant->id, fn() => Table::orderBy('number')->paginate(50));
     }
 
     public function categories(Restaurant $restaurant) {
@@ -336,7 +331,7 @@ class AdminTenantController extends Controller
 
     public function orders(Restaurant $restaurant, Request $r) {
         return Tenant::with($restaurant->id, function () use ($r) {
-            $q = Order::with(['table','user'])->orderByDesc('id');
+            $q = Order::with(['table','waiter','cashier:id,name'])->orderByDesc('id');
             if ($status = $r->query('status')) $q->where('status', $status);
             if ($date = $r->query('date')) $q->whereDate('placed_at', $date);
             return $q->paginate(50);
@@ -345,26 +340,38 @@ class AdminTenantController extends Controller
 
     public function dailySummary(Restaurant $restaurant, Request $r) {
         $date = $r->validate(['date'=>'required|date'])['date'];
-        return Tenant::with($restaurant->id, function () use ($date) {
-            $by = DB::table('payments')
-                ->join('orders','payments.order_id','=','orders.id')
+        return Tenant::with($restaurant->id, function () use ($restaurant, $date) {
+            $by = $this->paymentsQuery($restaurant)
                 ->whereDate('payments.paid_at', $date)
-                ->select('method', DB::raw('SUM(amount)::numeric(12,2) total'))
-                ->groupBy('method')
+                ->select('payments.method', DB::raw('SUM(payments.amount) as total'))
+                ->groupBy('payments.method')
                 ->pluck('total','method');
-            $ordersCount = Order::where('status','paid')->whereDate('closed_at',$date)->count();
+            $ordersCount = Order::where('status','completed')->whereDate('paid_at',$date)->count();
             $total = array_sum(array_map('floatval', $by->toArray()));
+            $money = fn ($value) => number_format((float) $value, 2, '.', '');
             return [
                 'date' => $date,
                 'orders_count' => $ordersCount,
-                'total_sales'  => number_format($total,2,'.',''),
+                'total_sales'  => $money($total),
                 'by_method'    => [
-                    'cash' => $by['cash'] ?? '0.00',
-                    'card' => $by['card'] ?? '0.00',
-                    'other'=> $by['other'] ?? '0.00',
+                    'cash'   => $money($by['cash'] ?? 0),
+                    'card'   => $money($by['card'] ?? 0),
+                    'mobile' => $money($by['mobile'] ?? 0),
+                    'other'  => $money($by['other'] ?? 0),
                 ],
             ];
         });
+    }
+
+    /**
+     * Payments joined to their orders, limited to one restaurant.
+     * Query builder calls are not covered by the Eloquent tenant scope.
+     */
+    private function paymentsQuery(Restaurant $restaurant)
+    {
+        return DB::table('payments')
+            ->join('orders', 'orders.id', '=', 'payments.order_id')
+            ->where('orders.restaurant_id', $restaurant->id);
     }
 
     // Optional: Impersonate a tenant user -> returns a short-lived JWT

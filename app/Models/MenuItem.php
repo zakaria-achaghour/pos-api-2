@@ -3,6 +3,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
 use App\Models\Traits\HasUserTracking;
 use App\Models\Traits\SetsRestaurant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MenuItem extends Model
 {
-    use HasFactory, SetsRestaurant, HasUserTracking;
+    use HasFactory, BelongsToTenant, SetsRestaurant, HasUserTracking;
 
     protected $fillable = [
         'restaurant_id',

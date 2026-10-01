@@ -4,6 +4,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Infrastructure\Tenancy\Tenant;
 
 class CreateOrderRequest extends FormRequest
 {
@@ -15,14 +17,15 @@ class CreateOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'table_id' => 'required|exists:tables,id',
-            'waiter_id' => 'nullable|exists:staff,id',
+            'table_id' => ['nullable', Rule::exists('tables', 'id')->where('restaurant_id', Tenant::id())->withoutTrashed()],
+            'waiter_id' => ['nullable', Rule::exists('staff', 'id')->where('restaurant_id', Tenant::id())->withoutTrashed()],
             'type' => 'nullable|in:dine-in,takeout,delivery',
+            'discount_amount' => 'nullable|numeric|min:0',
             'priority' => 'nullable|in:normal,rush,urgent',
             'notes' => 'nullable|string|max:500',
             'customer_name' => 'nullable|string|max:255',
             'items' => 'nullable|array',
-            'items.*.menu_item_id' => 'required|exists:menu_items,id',
+            'items.*.menu_item_id' => ['required', Rule::exists('menu_items', 'id')->where('restaurant_id', Tenant::id())],
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.special_instructions' => 'nullable|string|max:500',
             'items.*.removed_ingredients' => 'nullable|array',

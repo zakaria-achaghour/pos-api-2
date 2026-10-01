@@ -3,6 +3,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
 use App\Models\Traits\HasUserTracking;
 use App\Models\Traits\SetsRestaurant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,7 +31,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Category extends Model
 {
-    use HasFactory, SetsRestaurant, SoftDeletes, HasUserTracking;
+    use HasFactory, BelongsToTenant, SetsRestaurant, SoftDeletes, HasUserTracking;
 
     protected $fillable = [
         'restaurant_id',

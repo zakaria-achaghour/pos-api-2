@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
 use App\Models\Traits\HasUserTracking;
 use App\Models\Traits\SetsRestaurant;
 use Carbon\Carbon;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Attendance extends Model
 {
-    use HasFactory, SetsRestaurant, HasUserTracking;
+    use HasFactory, BelongsToTenant, SetsRestaurant, HasUserTracking;
 
     protected $fillable = [
         'restaurant_id',

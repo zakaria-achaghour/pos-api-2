@@ -36,7 +36,7 @@ class DashboardController extends Controller
         $payload = Cache::remember($cacheKey, 60, function () use ($restaurantId, $start, $end, $user, $now, $period) {
             $baseQuery = Order::where('restaurant_id', $restaurantId)
                 ->whereBetween('paid_at', [$start, $end])
-                ->whereIn('status', ['completed', 'paid']);
+                ->where('status', 'completed');
 
             $ordersToday = (clone $baseQuery)->count();
             $salesToday = (clone $baseQuery)->sum('total');

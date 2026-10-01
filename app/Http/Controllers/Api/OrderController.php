@@ -31,6 +31,9 @@ class OrderController extends Controller
      *     path="/api/orders",
      *     tags={"Orders"},
      *     summary="Get list of orders",
+     *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string"), description="Search ID (including ORD- prefix), notes, table number or menu item name"),
+     *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer", minimum=1, maximum=100, default=15)),
+     *     @OA\Parameter(name="mine", in="query", @OA\Schema(type="boolean"), description="Only orders assigned to the authenticated user's staff record"),
      *     description="Retrieve a paginated list of orders with filtering options",
      *     security={{"bearer_token": {}}},
      *     @OA\Parameter(
@@ -45,7 +48,7 @@ class OrderController extends Controller
      *         in="query",
      *         description="Filter by order status",
      *         required=false,
-     *         @OA\Schema(type="string", enum={"pending", "accepted", "preparing", "ready", "served", "completed", "cancelled"})
+     *         @OA\Schema(type="string", enum={"active", "pending", "accepted", "preparing", "ready", "served", "completed", "cancelled"})
      *     ),
      *     @OA\Parameter(
      *         name="type",
@@ -107,11 +110,39 @@ class OrderController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $request->validate([
+            'search' => 'nullable|string|max:200',
+            'status' => 'nullable|in:active,pending,accepted,preparing,ready,served,completed,cancelled',
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'mine' => 'sometimes|boolean',
+        ]);
+
         $query = Order::with(['table', 'waiter', 'orderItems.menuItem'])
             ->where('restaurant_id', Tenant::id());
 
-        if ($request->has('status')) {
+        if ($request->status === 'active') {
+            $query->whereNotIn('status', ['completed', 'cancelled']);
+        } elseif ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+
+        if ($request->boolean('mine')) {
+            $query->whereHas('waiter', fn ($waiter) => $waiter
+                ->where('restaurant_id', Tenant::id())
+                ->where('user_id', $request->user('api')->id));
+        }
+
+        if ($request->filled('search')) {
+            $term = trim($request->string('search')->toString());
+            $query->where(function ($search) use ($term) {
+                $search->whereRaw("LOWER(COALESCE(notes, '')) LIKE ?", ['%'.mb_strtolower($term).'%'])
+                    ->orWhereHas('table', fn ($table) => $table->whereRaw('LOWER(number) LIKE ?', ['%'.mb_strtolower($term).'%']))
+                    ->orWhereHas('orderItems.menuItem', fn ($item) => $item->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($term).'%']));
+                $id = preg_replace('/^(?:ORD-|#)/i', '', $term);
+                if (ctype_digit($id)) {
+                    $search->orWhere('orders.id', (int) $id);
+                }
+            });
         }
 
         if ($request->has('type')) {
@@ -134,7 +165,7 @@ class OrderController extends Controller
             $query->where('placed_at', '<=', $request->date_to);
         }
 
-        $orders = $query->orderBy('placed_at', 'desc')->paginate();
+        $orders = $query->orderBy('placed_at', 'desc')->orderBy('id', 'desc')->paginate($request->integer('per_page', 15))->withQueryString();
 
         return response()->json($orders);
     }
@@ -170,7 +201,11 @@ class OrderController extends Controller
     public function store(CreateOrderRequest $request): JsonResponse
     {
         $data = $request->validated();
-        
+        if (empty($data['waiter_id']) && $request->user('api')->hasRole('Waiter')) {
+            $data['waiter_id'] = \App\Models\Staff::where('restaurant_id', Tenant::id())
+                ->where('user_id', $request->user('api')->id)->value('id');
+        }
+
         $order = DB::transaction(function () use ($data) {
             $order = Order::create($data);
             
@@ -186,6 +221,8 @@ class OrderController extends Controller
                 $this->createKitchenTicket($order);
             }
             
+            $this->recalculateOrderTotal($order);
+
             return $order;
         });
 
@@ -303,6 +340,9 @@ class OrderController extends Controller
 
         // Update only the fields that are present in the request
         $order->update($request->validated());
+        if ($request->has('discount_amount')) {
+            $this->recalculateOrderTotal($order);
+        }
 
         // If status changed, trigger event
         if ($request->has('status') && $request->status !== $order->getOriginal('status')) {
@@ -479,36 +519,39 @@ class OrderController extends Controller
             'tax_amount' => 'nullable|numeric|min:0',
         ]);
 
-        if ($order->status !== 'open') {
+        if (in_array($order->status, ['completed', 'cancelled'])) {
             return response()->json([
-                'message' => 'Order cannot be closed in current status'
+                'message' => 'Order cannot be closed in current status',
+                'current_status' => $order->status
             ], 422);
         }
 
-        $order->update([
-            'status' => 'completed',
-            'payment_method' => $request->payment_method,
-            'discount_amount' => $request->discount_amount ?? 0,
-            'tax_amount' => $request->tax_amount ?? 0,
-            'paid_at' => now(),
-            'paid_by' => auth()->id(),
-        ]);
+        DB::transaction(function () use ($request, $order) {
+            $order->update([
+                'status' => 'completed',
+                'payment_method' => $request->payment_method,
+                'discount_amount' => $request->discount_amount ?? $order->discount_amount ?? 0,
+                'tax_amount' => $request->tax_amount ?? 0,
+                'paid_at' => now(),
+                'paid_by' => auth()->id(),
+            ]);
 
-        $this->recalculateOrderTotal($order);
-        $order->refresh();
+            $this->recalculateOrderTotal($order);
+            $order->refresh();
 
-        // Update table status if applicable
-        if ($order->table) {
-            $order->table->update(['status' => 'available']);
-        }
+            // Update table status if applicable
+            if ($order->table) {
+                $order->table->update(['status' => 'available']);
+            }
+
+            $this->syncPaymentRecord($order, [
+                'amount' => $order->total,
+                'method' => $order->payment_method,
+                'paid_at' => $order->paid_at,
+            ]);
+        });
 
         event(new OrderStatusUpdated($order, 'completed'));
-
-        $this->syncPaymentRecord($order, [
-            'amount' => $order->total,
-            'method' => $order->payment_method,
-            'paid_at' => $order->paid_at,
-        ]);
 
         return response()->json([
             'message' => 'Order closed successfully',
@@ -535,6 +578,7 @@ class OrderController extends Controller
      *         @OA\JsonContent(
      *             required={"payment_method", "payment_status"},
      *             @OA\Property(property="payment_method", type="string", enum={"cash", "card", "mobile"}, example="cash"),
+     *             @OA\Property(property="discount_amount", type="number", minimum=0, description="Absolute discount; recalculates order total"),
      *             @OA\Property(property="payment_status", type="string", enum={"pending", "completed", "failed", "refunded"}, example="completed"),
      *             @OA\Property(property="amount_received", type="number", format="float", example=500.00, description="Amount received from customer"),
      *             @OA\Property(property="tip_amount", type="number", format="float", example=13.52, description="Tip amount"),
@@ -575,41 +619,52 @@ class OrderController extends Controller
             'payment_status' => 'required|in:pending,completed,failed,refunded',
             'amount_received' => 'nullable|numeric|min:0',
             'tip_amount' => 'nullable|numeric|min:0',
+            'discount_amount' => 'sometimes|numeric|min:0',
             'transaction_id' => 'nullable|string|max:255',
         ]);
 
         // Calculate total with tip if provided
         $tipAmount = $validated['tip_amount'] ?? 0;
-        $totalWithTip = $order->total + $tipAmount;
+        $totalWithTip = 0;
 
-        // Update order payment details
-        $order->update([
-            'payment_method' => $validated['payment_method'],
-        ]);
-
-        // If payment status is completed, mark order as paid
-        if ($validated['payment_status'] === 'completed') {
+        $payment = DB::transaction(function () use ($validated, $order, $tipAmount, &$totalWithTip) {
+            if (array_key_exists('discount_amount', $validated)) {
+                $order->update(['discount_amount' => $validated['discount_amount']]);
+                $this->recalculateOrderTotal($order);
+                $order->refresh();
+            }
+            $totalWithTip = round($order->total + $tipAmount, 2);
+            // Update order payment details
             $order->update([
-                'status' => 'completed',
-                'paid_at' => now(),
-                'paid_by' => auth()->id(),
+                'payment_method' => $validated['payment_method'],
             ]);
 
-            // Update table status if applicable
-            if ($order->table) {
-                $order->table->update(['status' => 'available']);
+            // If payment status is completed, mark order as paid
+            if ($validated['payment_status'] === 'completed') {
+                $order->update([
+                    'status' => 'completed',
+                    'paid_at' => now(),
+                    'paid_by' => auth()->id(),
+                ]);
+
+                // Update table status if applicable
+                if ($order->table) {
+                    $order->table->update(['status' => 'available']);
+                }
             }
 
+            // Create or update payment record
+            return $this->syncPaymentRecord($order->fresh(), [
+                'amount' => $validated['amount_received'] ?? $totalWithTip,
+                'method' => $validated['payment_method'],
+                'transaction_id' => $validated['transaction_id'] ?? null,
+                'paid_at' => $validated['payment_status'] === 'completed' ? now() : null,
+            ]);
+        });
+
+        if ($validated['payment_status'] === 'completed') {
             event(new OrderStatusUpdated($order, 'completed'));
         }
-
-        // Create or update payment record
-        $payment = $this->syncPaymentRecord($order->fresh(), [
-            'amount' => $validated['amount_received'] ?? $totalWithTip,
-            'method' => $validated['payment_method'],
-            'transaction_id' => $validated['transaction_id'] ?? null,
-            'paid_at' => $validated['payment_status'] === 'completed' ? now() : null,
-        ]);
 
         return response()->json([
             'message' => 'Payment updated successfully',
@@ -689,20 +744,7 @@ class OrderController extends Controller
 
         // If order is accepted, create a kitchen ticket
         if ($newStatus === 'accepted' && !$order->kitchenTicket) {
-            $lastTicket = \App\Models\KitchenTicket::where('restaurant_id', Tenant::id())
-                ->latest('ticket_number')
-                ->first();
-            
-            $nextTicketNumber = $lastTicket ? $lastTicket->ticket_number + 1 : 1;
-            
-            \App\Models\KitchenTicket::create([
-                'restaurant_id' => Tenant::id(),
-                'order_id' => $order->id,
-                'ticket_number' => $nextTicketNumber,
-                'priority' => $order->priority ?? 'normal',
-                'status' => 'pending',
-                'special_instructions' => $order->notes,
-            ]);
+            $this->createKitchenTicket($order);
         }
 
         // If order is completed, mark it as paid if not already
@@ -836,7 +878,7 @@ class OrderController extends Controller
         $discount = $order->discount_amount ?? 0;
 
         $taxRate = $order->restaurant?->tax_rate ?? 0;
-        $serviceRate = $order->restaurant?->service_charge_rate ?? 0;
+        $serviceRate = $order->restaurant?->service_charge ?? 0;
 
         $taxAmount = round($subtotal * ($taxRate / 100), 2);
         $serviceChargeAmount = round($subtotal * ($serviceRate / 100), 2);

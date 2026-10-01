@@ -3,6 +3,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
 use App\Models\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Staff extends Model
 {
-    use HasFactory, SoftDeletes, HasUserTracking;
+    use HasFactory, BelongsToTenant, SoftDeletes, HasUserTracking;
 
     protected $fillable = [
         'restaurant_id',
