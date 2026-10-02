@@ -1,5 +1,4 @@
 <?php
-// filepath: database/seeders/DatabaseSeeder.php
 
 namespace Database\Seeders;
 
@@ -9,15 +8,6 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call([
-            RoleSeeder::class,
-            RestaurantSeeder::class,
-            UserSeeder::class,
-            CategorySeeder::class,
-            MenuItemSeeder::class,
-            TableSeeder::class,
-            StaffSeeder::class,
-            OrderSeeder::class,
-        ]);
+        $this->call([SuperAdminSeeder::class, RestaurantSeeder::class]);
     }
 }

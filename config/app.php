@@ -135,6 +135,7 @@ return [
     */
 
     'super_admin_email' => env('APP_SUPER_ADMIN_EMAIL', 'superadmin@pos.com'),
+    'demo_password' => env('APP_DEMO_PASSWORD', 'password123'),
     'super_admin_password' => env('APP_SUPER_ADMIN_PASSWORD', 'password123'),
 
 ];
