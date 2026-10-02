@@ -2,7 +2,7 @@
 
 namespace App\Models\Traits;
 
-use Illuminate\Support\Facades\Auth;
+use Infrastructure\Tenancy\Tenant;
 
 trait HasUserTracking
 {
@@ -13,18 +13,20 @@ trait HasUserTracking
     {
         // Set created_by when creating a new record
         static::creating(function ($model) {
-            if (Auth::check() && !$model->isDirty('created_by')) {
-                $model->created_by = Auth::id();
+            $actorId = Tenant::actorId();
+            if ($actorId !== null && ! $model->isDirty('created_by')) {
+                $model->created_by = $actorId;
             }
-            if (Auth::check() && !$model->isDirty('updated_by')) {
-                $model->updated_by = Auth::id();
+            if ($actorId !== null && ! $model->isDirty('updated_by')) {
+                $model->updated_by = $actorId;
             }
         });
 
         // Set updated_by when updating a record
         static::updating(function ($model) {
-            if (Auth::check() && !$model->isDirty('updated_by')) {
-                $model->updated_by = Auth::id();
+            $actorId = Tenant::actorId();
+            if ($actorId !== null && ! $model->isDirty('updated_by')) {
+                $model->updated_by = $actorId;
             }
         });
     }

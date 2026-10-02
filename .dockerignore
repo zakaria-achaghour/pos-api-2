@@ -10,10 +10,6 @@
 vendor
 node_modules
 
-# Local secrets and environment files
-.env
-.env.*
-!.env.example
 
 # Generated at runtime or by tests; some are root-owned and unreadable by the build
 storage/logs/*.log
